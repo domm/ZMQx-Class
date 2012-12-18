@@ -1,4 +1,4 @@
-package ZMQx::Helper::SocketFactory;
+package ZMQx::Class;
 use strict;
 use warnings;
 use 5.010;
@@ -21,7 +21,7 @@ my %types = (
     'PAIR'=>ZMQ_PAIR,
 );
 
-sub make {
+sub socket {
     my ($class, $context, $type, $connect, $address ) = @_;
     die "no such socket type: $type" unless defined $types{$type};
     my $socket = ZMQx::Helper::Socket->new(

@@ -1,4 +1,4 @@
-package ZMQx::Helper::Socket;
+package ZMQx::Class::Socket;
 use strict;
 use warnings;
 use 5.010;
