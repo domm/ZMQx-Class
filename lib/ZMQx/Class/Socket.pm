@@ -76,7 +76,7 @@ sub receive_all_multipart_messages {
     my $socket = $self->socket;
     my @parts;
     my @msgs;
-    while (my $rmsg = zmq_recvmsg( $socket,, $blocking ? 0 : ZMQ_DONTWAIT)) {
+    while (my $rmsg = zmq_recvmsg( $socket, $blocking ? 0 : ZMQ_DONTWAIT)) {
         push (@parts,zmq_msg_data( $rmsg ));
         if (! zmq_getsockopt($socket, ZMQ_RCVMORE)) {
             push(@msgs,[ @parts ]);
