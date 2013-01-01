@@ -3,6 +3,7 @@ use strict;
 use warnings;
 use 5.010;
 use ZMQx::Class::Socket;
+use Carp qw(croak);
 
 use ZMQ::LibZMQ3 qw(zmq_socket zmq_init);
 use ZMQ::Constants qw(ZMQ_REQ ZMQ_REP ZMQ_DEALER ZMQ_ROUTER ZMQ_PULL ZMQ_PUSH ZMQ_PUB ZMQ_SUB  ZMQ_XPUB ZMQ_XSUB ZMQ_PAIR);
@@ -23,7 +24,7 @@ my %types = (
 
 sub socket {
     my ($class, $context, $type, $connect, $address ) = @_;
-    die "no such socket type: $type" unless defined $types{$type};
+    croak "no such socket type: $type" unless defined $types{$type};
     my $socket = ZMQx::Class::Socket->new(
         socket=>zmq_socket($context,$types{$type}),
     );
@@ -35,7 +36,7 @@ sub socket {
             $socket->connect($address);
         }
         else {
-            die "no such connect type: $connect";
+            croak "no such connect type: $connect";
         }
     }
     return $socket;
