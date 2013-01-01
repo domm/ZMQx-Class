@@ -14,6 +14,11 @@ has 'socket' => (
     required=>1,
 );
 
+has 'type' => (
+    is=>'ro',
+    required=>1,
+);
+
 sub bind {
     my ($self, $address) = @_;
     zmq_bind($self->socket,$address);

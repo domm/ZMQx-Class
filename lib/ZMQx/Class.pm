@@ -26,7 +26,8 @@ sub socket {
     my ($class, $context, $type, $connect, $address ) = @_;
     croak "no such socket type: $type" unless defined $types{$type};
     my $socket = ZMQx::Class::Socket->new(
-        socket=>zmq_socket($context,$types{$type}),
+        socket => zmq_socket($context,$types{$type}),
+        type   => $type,
     );
     if ($connect && $address) {
         if ($connect eq 'bind') {
