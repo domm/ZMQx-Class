@@ -36,6 +36,11 @@ sub setsockopt {
     zmq_setsockopt($self->socket, @_);
 }
 
+sub getsockopt {
+    my $self = shift;
+    zmq_getsockopt($self->socket, @_);
+}
+
 sub send {
     my ($self, $msg) = @_;
     zmq_sendmsg( $self->socket, $msg);
@@ -98,6 +103,11 @@ sub subscribe {
     croak('$socket->subscribe only works on SUB sockets') unless $self->type =~/^X?SUB$/;
     croak('required paramater $subscription missing') unless defined $subscribe;
     zmq_setsockopt($self->socket,ZMQ_SUBSCRIBE,$subscribe);
+}
+
+sub get_fh {
+    my $self = shift;
+    return zmq_getsockopt($self->socket, ZMQ_FD);
 }
 
 1;
