@@ -30,5 +30,10 @@ dies_ok {
     ZMQx::Class->socket($context, 'PULL', teleport=>'tcp://*:5599');
 } "cannot init socket & teleport";
 
+{
+    my $socket = ZMQx::Class->socket($context, 'REQ');
+    is($socket->type,'REQ', '$socket->type');
+}
+
 done_testing();
 
