@@ -6,7 +6,6 @@ use Test::Most;
 
 use ZMQx::Class;
 use ZMQ::LibZMQ3;
-use ZMQ::Constants qw(ZMQ_SUBSCRIBE ZMQ_DONTWAIT);
 
 my $context = zmq_init();
 
@@ -26,7 +25,7 @@ my $context = zmq_init();
     my @send = ('Hello','World');
     $client->send_multipart(@send);
     my $got = $server->receive_multipart('blocking');
-    cmp_deeply($got,\@send,'pub-sub');
+    cmp_deeply($got,\@send,'req-rep');
 }
 
 done_testing();
