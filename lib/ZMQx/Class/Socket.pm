@@ -4,9 +4,11 @@ use warnings;
 use 5.010;
 
 use Moose;
+use Carp qw(croak);
 use namespace::autoclean;
 use ZMQ::LibZMQ3;
-use ZMQ::Constants qw(ZMQ_FD ZMQ_SNDMORE ZMQ_RCVMORE ZMQ_DONTWAIT);
+use ZMQ::Constants qw(ZMQ_FD ZMQ_SNDMORE ZMQ_RCVMORE ZMQ_DONTWAIT ZMQ_SUBSCRIBE);
+
 
 has 'socket' => (
     is=>'ro',
@@ -89,6 +91,13 @@ sub receive_all_multipart_messages {
         }
     }
     return \@msgs;
+}
+
+sub subscribe {
+    my ($self, $subscribe) = @_;
+    croak('$socket->subscribe only works on SUB sockets') unless $self->type =~/^X?SUB$/;
+    croak('required paramater $subscription missing') unless defined $subscribe;
+    zmq_setsockopt($self->socket,ZMQ_SUBSCRIBE,$subscribe);
 }
 
 1;
