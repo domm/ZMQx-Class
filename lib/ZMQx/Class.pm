@@ -5,6 +5,9 @@ use 5.010;
 use ZMQx::Class::Socket;
 use Carp qw(croak);
 
+our $VERSION = "0.001";
+# ABSTRACT: OO Interface to ZMQ
+
 use ZMQ::LibZMQ3 qw(zmq_socket zmq_init);
 use ZMQ::Constants qw(ZMQ_REQ ZMQ_REP ZMQ_DEALER ZMQ_ROUTER ZMQ_PULL ZMQ_PUSH ZMQ_PUB ZMQ_SUB  ZMQ_XPUB ZMQ_XSUB ZMQ_PAIR);
 

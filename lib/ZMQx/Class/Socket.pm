@@ -3,6 +3,8 @@ use strict;
 use warnings;
 use 5.010;
 
+# ABSTRACT: A ZMQ Socket
+
 use Moose;
 use Carp qw(croak);
 use namespace::autoclean;
