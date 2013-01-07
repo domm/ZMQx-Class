@@ -5,9 +5,8 @@ use 5.010;
 use Test::Most;
 
 use ZMQx::Class;
-use ZMQ::LibZMQ3;
 
-my $context = zmq_init();
+my $context = ZMQx::Class->context;
 
 {   # push-pull
     my $pull = ZMQx::Class->socket($context, 'PULL', bind =>'tcp://*:5599' );

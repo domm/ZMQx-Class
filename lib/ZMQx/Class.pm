@@ -25,6 +25,11 @@ my %types = (
     'PAIR'=>ZMQ_PAIR,
 );
 
+sub context {
+    my $class = shift;
+    return zmq_init();
+}
+
 sub socket {
     my ($class, $context, $type, $connect, $address ) = @_;
     croak "no such socket type: $type" unless defined $types{$type};

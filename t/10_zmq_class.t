@@ -5,9 +5,9 @@ use 5.010;
 use Test::Most;
 
 use ZMQx::Class;
-use ZMQ::LibZMQ3;
 
-my $context = zmq_init();
+my $context = ZMQx::Class->context;
+isa_ok($context,'ZMQ::LibZMQ3::Context');
 
 foreach (qw(REQ REP DEALER ROUTER PULL PUSH PUB SUB XPUB XSUB PAIR)) {
     lives_ok {

@@ -3,13 +3,12 @@ use warnings;
 use 5.010;
 
 use Test::Most;
-
 use ZMQx::Class;
 use ZMQx::Class::AnyEvent;
 use ZMQ::LibZMQ3;
 use Data::Dumper;
 
-my $context = zmq_init();
+my $context = ZMQx::Class->context;
 
 {   # AnyEvent pub-sub
     my $server = ZMQx::Class->socket($context, 'PUB', bind =>'tcp://*:5599' );
