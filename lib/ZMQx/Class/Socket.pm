@@ -8,9 +8,10 @@ use 5.010;
 use Moose;
 use Carp qw(croak);
 use namespace::autoclean;
+use Package::Stash;
 use ZMQ::LibZMQ3;
-use ZMQ::Constants qw(ZMQ_FD ZMQ_SNDMORE ZMQ_RCVMORE ZMQ_DONTWAIT ZMQ_SUBSCRIBE);
 
+use ZMQ::Constants ':all';
 
 has 'socket' => (
     is=>'ro',
@@ -112,4 +113,22 @@ sub get_fh {
     return zmq_getsockopt($self->socket, ZMQ_FD);
 }
 
+{
+    no strict 'refs';
+    my @sockopt_constants=qw(ZMQ_SNDHWM ZMQ_RCVHWM ZMQ_AFFINITY ZMQ_SUBSCRIBE ZMQ_UNSUBSCRIBE ZMQ_IDENTITY ZMQ_RATE ZMQ_RECOVERY_IVL ZMQ_SNDBUF ZMQ_RCVBUF ZMQ_LINGER ZMQ_RECONNECT_IVL ZMQ_RECONNECT_IVL_MAX ZMQ_BACKLOG ZMQ_MAXMSGSIZE ZMQ_MULTICAST_HOPS ZMQ_RCVTIMEO ZMQ_SNDTIMEO ZMQ_IPV4ONLY);
+    my $stash = Package::Stash->new(__PACKAGE__);
+    foreach my $const (@sockopt_constants) {
+        my $method = lc($const);
+        $method =~s/^zmq_/set_/;
+
+        if ($stash->has_symbol('&'.$const)) {
+            my $constval = &$const;
+            $stash->add_symbol('&'.$method => sub {
+                my $self = shift;
+                zmq_setsockopt($self->socket,$constval,@_);
+                return $self;
+            });
+        }
+    }
+}
 1;
