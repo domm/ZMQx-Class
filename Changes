@@ -1,5 +1,11 @@
 Revision history for ZMQx::Class
 
-0.001	
+0.002   2013-01-07T15:13:24+0100
+    - create set_SOCKOPT shortcut methods
+    - use random port numbers to avoid clashes in tests
+    - added ZMQx::Class->context
+
+
+0.001
     - started new dist
 
