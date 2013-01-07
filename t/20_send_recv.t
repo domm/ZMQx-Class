@@ -7,10 +7,12 @@ use Test::Most;
 use ZMQx::Class;
 
 my $context = ZMQx::Class->context;
+my $port = int(rand(64)).'025';
+diag("running zmq on port $port");
 
 {   # push-pull
-    my $pull = ZMQx::Class->socket($context, 'PULL', bind =>'tcp://*:5599' );
-    my $push = ZMQx::Class->socket($context, 'PUSH', connect =>'tcp://localhost:5599' );
+    my $pull = ZMQx::Class->socket($context, 'PULL', bind =>'tcp://*:'.$port );
+    my $push = ZMQx::Class->socket($context, 'PUSH', connect =>'tcp://localhost:'.$port );
     my @send = ('Hello','World');
     $push->send_multipart(@send);
     my $got = $pull->receive_multipart('blocking');
@@ -18,8 +20,8 @@ my $context = ZMQx::Class->context;
 }
 
 {   # req-rep
-    my $server = ZMQx::Class->socket($context, 'REP', bind =>'tcp://*:5599' );
-    my $client = ZMQx::Class->socket($context, 'REQ', connect =>'tcp://localhost:5599' );
+    my $server = ZMQx::Class->socket($context, 'REP', bind =>'tcp://*:'.$port );
+    my $client = ZMQx::Class->socket($context, 'REQ', connect =>'tcp://localhost:'.$port );
 
     my @send = ('Hello','World');
     $client->send_multipart(@send);

@@ -9,11 +9,13 @@ use ZMQ::LibZMQ3;
 use Data::Dumper;
 
 my $context = ZMQx::Class->context;
+my $port = int(rand(64)).'025';
+diag("running zmq on port $port");
 
 {   # AnyEvent pub-sub
-    my $server = ZMQx::Class->socket($context, 'PUB', bind =>'tcp://*:5599' );
+    my $server = ZMQx::Class->socket($context, 'PUB', bind =>'tcp://*:'.$port );
 
-    my $client1 = ZMQx::Class->socket($context, 'SUB', connect =>'tcp://localhost:5599' );
+    my $client1 = ZMQx::Class->socket($context, 'SUB', connect =>'tcp://localhost:'.$port );
     $client1->subscribe('');
     my $done1 = AnyEvent->condvar;
     my @got1;
@@ -23,7 +25,7 @@ my $context = ZMQx::Class->context;
         $done1->send if @$msgs >= 2;
     });
 
-    my $client2 = ZMQx::Class->socket($context, 'SUB', connect =>'tcp://localhost:5599' );
+    my $client2 = ZMQx::Class->socket($context, 'SUB', connect =>'tcp://localhost:'.$port );
     $client2->subscribe('222');
     my $done2 = AnyEvent->condvar;
     my @got2;
