@@ -59,6 +59,16 @@ sub send_multipart {
     zmq_sendmsg( $socket, $last);
 }
 
+sub send_dontwait {
+    my ($self, @parts) = @_;
+    my $socket = $self->socket;
+    my $last = pop(@parts);
+    foreach (@parts) {
+        zmq_sendmsg( $socket, $_, ZMQ_SNDMORE | ZMQ_DONTWAIT );
+    }
+    zmq_sendmsg( $socket, $last,  ZMQ_DONTWAIT);
+}
+
 sub receive_multipart {
     my ($self, $blocking) = @_;
     my $socket = $self->socket;
@@ -99,6 +109,23 @@ sub receive_all_multipart_messages {
         }
     }
     return \@msgs;
+}
+
+sub wait_for_message {
+    my $socket = shift;
+    my $msg;
+    my $got_message = AnyEvent->condvar;
+    my $fh = $socket->get_fh;
+    my $watcher = AnyEvent->io (
+        fh      => $fh,
+        poll    => "r",
+        cb      => sub {
+            $msg = $socket->receive_multipart;
+            $got_message->send;
+        },
+    );
+    $got_message->recv;
+    return $msg;
 }
 
 sub subscribe {
