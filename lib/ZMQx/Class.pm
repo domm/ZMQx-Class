@@ -7,6 +7,7 @@ use Carp qw(croak);
 
 our $VERSION = "0.002";
 # ABSTRACT: OO Interface to ZMQ
+my $__CONTEXT;
 
 use ZMQ::LibZMQ3 qw(zmq_socket zmq_init);
 use ZMQ::Constants qw(ZMQ_REQ ZMQ_REP ZMQ_DEALER ZMQ_ROUTER ZMQ_PULL ZMQ_PUSH ZMQ_PUB ZMQ_SUB  ZMQ_XPUB ZMQ_XSUB ZMQ_PAIR);
@@ -25,9 +26,14 @@ my %types = (
     'PAIR'=>ZMQ_PAIR,
 );
 
-sub context {
+sub new_context {
     my $class = shift;
     return zmq_init();
+}
+
+sub context {
+    my $class = shift;
+    return $__CONTEXT //= $class->new_context(@_);
 }
 
 sub socket {
