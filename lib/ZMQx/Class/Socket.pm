@@ -145,15 +145,20 @@ sub get_fh {
     my @sockopt_constants=qw(ZMQ_SNDHWM ZMQ_RCVHWM ZMQ_AFFINITY ZMQ_SUBSCRIBE ZMQ_UNSUBSCRIBE ZMQ_IDENTITY ZMQ_RATE ZMQ_RECOVERY_IVL ZMQ_SNDBUF ZMQ_RCVBUF ZMQ_LINGER ZMQ_RECONNECT_IVL ZMQ_RECONNECT_IVL_MAX ZMQ_BACKLOG ZMQ_MAXMSGSIZE ZMQ_MULTICAST_HOPS ZMQ_RCVTIMEO ZMQ_SNDTIMEO ZMQ_IPV4ONLY);
     my $stash = Package::Stash->new(__PACKAGE__);
     foreach my $const (@sockopt_constants) {
-        my $method = lc($const);
-        $method =~s/^zmq_/set_/;
+        my $get = my $set = lc($const);
+        $set =~s/^zmq_/set_/;
+        $get =~s/^zmq_/get_/;
 
         if ($stash->has_symbol('&'.$const)) {
             my $constval = &$const;
-            $stash->add_symbol('&'.$method => sub {
+            $stash->add_symbol('&'.$set => sub {
                 my $self = shift;
                 zmq_setsockopt($self->socket,$constval,@_);
                 return $self;
+            });
+            $stash->add_symbol('&'.$get => sub {
+                my $self = shift;
+                return zmq_getsockopt($self->socket,$constval);
             });
         }
     }
