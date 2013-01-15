@@ -46,7 +46,7 @@ sub getsockopt {
 
 sub send {
     my ($self, $msg) = @_;
-    zmq_sendmsg( $self->socket, $msg);
+    zmq_msg_send($msg, $self->socket);
 }
 
 sub send_multipart {
@@ -54,9 +54,9 @@ sub send_multipart {
     my $socket = $self->socket;
     my $last = pop(@parts);
     foreach (@parts) {
-        zmq_sendmsg( $socket, $_, ZMQ_SNDMORE );
+        zmq_msg_send( $_, $socket, ZMQ_SNDMORE );
     }
-    zmq_sendmsg( $socket, $last);
+    zmq_msg_send($last, $socket );
 }
 
 sub send_dontwait {
@@ -64,9 +64,9 @@ sub send_dontwait {
     my $socket = $self->socket;
     my $last = pop(@parts);
     foreach (@parts) {
-        zmq_sendmsg( $socket, $_, ZMQ_SNDMORE | ZMQ_DONTWAIT );
+        zmq_msg_send($_, $socket, ZMQ_SNDMORE | ZMQ_DONTWAIT );
     }
-    zmq_sendmsg( $socket, $last,  ZMQ_DONTWAIT);
+    zmq_msg_send( $last, $socket, ZMQ_DONTWAIT);
 }
 
 sub receive_multipart {
