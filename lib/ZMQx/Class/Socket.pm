@@ -49,7 +49,7 @@ sub send {
     zmq_msg_send($msg, $self->socket);
 }
 
-sub send_multipart {
+sub send_multipart { # remove, make send smarter
     my ($self, @parts) = @_;
     my $socket = $self->socket;
     my $last = pop(@parts);
