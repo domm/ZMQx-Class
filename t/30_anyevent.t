@@ -9,10 +9,10 @@ use ZMQ::LibZMQ3;
 use Data::Dumper;
 
 my $context = ZMQx::Class->context;
-my $port = int(rand(64)).'025';
-diag("running zmq on port $port");
 
 {   # AnyEvent pub-sub
+    my $port = int(rand(64)+1).'025';
+    diag("running zmq on port $port");
     my $server = ZMQx::Class->socket($context, 'PUB', bind =>'tcp://*:'.$port );
 
     my $client1 = ZMQx::Class->socket($context, 'SUB', connect =>'tcp://localhost:'.$port );
@@ -53,6 +53,26 @@ diag("running zmq on port $port");
     cmp_deeply($got1[1],\@send_2,'client 1 second message = 222 foo');
     cmp_deeply($got2[0],\@send_2,'client 2 first message = 222 foo');
 }
+
+{   # AnyEvent req-rep using wait_for_message
+    my $port = int(rand(64)+1).'025';
+    diag("running zmq on port $port");
+    my $message = "Hello";
+
+    my $server = ZMQx::Class->socket($context, 'REP', bind =>'tcp://*:'.$port );
+
+    my $client = ZMQx::Class->socket($context, 'REQ', connect =>'tcp://localhost:'.$port );
+    $client->send($message);
+
+    my $server_got = $server->receive_multipart(1);
+    cmp_deeply($server_got,[$message],'Server got message');
+    $server->send_multipart('ok',@$server_got);
+    sleep(1);
+    my $res = $client->wait_for_message;
+
+    cmp_deeply($res,['ok',$message],'Client got response from server');
+}
+
 
 done_testing();
 
