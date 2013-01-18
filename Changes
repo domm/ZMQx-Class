@@ -1,5 +1,15 @@
 Revision history for ZMQx::Class
 
+0.003   2013-01-18T09:43:30+0100
+    - smarter send method that can handle single, multipart and
+      flags (Thomas Klausner)
+    - added tests (Thomas Klausner)
+    - added get_sockopt helper methods (Thomas Klausner)
+    - use zmq_msg_send instead of zmq_sendmsg (Thomas Klausner)
+    - new_context, context (Klaus Ita)
+    - added wait_for_message (Thomas Klausner)
+
+
 0.002   2013-01-07T15:13:24+0100
     - create set_SOCKOPT shortcut methods
     - use random port numbers to avoid clashes in tests
