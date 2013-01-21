@@ -44,29 +44,37 @@ sub getsockopt {
     zmq_getsockopt($self->socket, @_);
 }
 
+#sub send {
+#    my ($self, $msg) = @_;
+#    zmq_msg_send($msg, $self->socket);
+#}
+#
+#sub send_multipart { # remove, make send smarter
+#    my ($self, @parts) = @_;
+#    my $socket = $self->socket;
+#    my $last = pop(@parts);
+#    foreach (@parts) {
+#        zmq_msg_send( $_, $socket, ZMQ_SNDMORE );
+#    }
+#    zmq_msg_send($last, $socket );
+#}
+
 sub send {
-    my ($self, $msg) = @_;
-    zmq_msg_send($msg, $self->socket);
-}
+    my ($self, $parts, $flags) = @_;
+    $flags //= 0;
 
-sub send_multipart {
-    my ($self, @parts) = @_;
-    my $socket = $self->socket;
-    my $last = pop(@parts);
-    foreach (@parts) {
-        zmq_msg_send( $_, $socket, ZMQ_SNDMORE );
+    my $max_idx = $#{$parts};
+    if ($max_idx == 0) { # single part message
+        return zmq_msg_send($parts->[0], $self->socket, $flags);
     }
-    zmq_msg_send($last, $socket );
-}
 
-sub send_dontwait {
-    my ($self, @parts) = @_;
+    # multipart
     my $socket = $self->socket;
-    my $last = pop(@parts);
-    foreach (@parts) {
-        zmq_msg_send($_, $socket, ZMQ_SNDMORE | ZMQ_DONTWAIT );
+    my $mflags = $flags ? $flags | ZMQ_SNDMORE : ZMQ_SNDMORE;
+    foreach (0 .. $max_idx - 1) {
+        zmq_msg_send( $parts->[$_], $socket, $mflags);
     }
-    zmq_msg_send( $last, $socket, ZMQ_DONTWAIT);
+    zmq_msg_send( $parts->[$max_idx], $socket, $flags);
 }
 
 sub receive_multipart {

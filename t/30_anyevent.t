@@ -7,6 +7,7 @@ use ZMQx::Class;
 use ZMQx::Class::AnyEvent;
 use ZMQ::LibZMQ3;
 use Data::Dumper;
+use ZMQ::Constants qw(ZMQ_DONTWAIT);
 
 my $context = ZMQx::Class->context;
 
@@ -38,10 +39,10 @@ my $context = ZMQx::Class->context;
     sleep(1);
 
     my @send_1 = ('Hello','World');
-    $server->send_multipart(@send_1);
+    $server->send(\@send_1);
 
     my @send_2 = ('222','foo');
-    $server->send_multipart(@send_2);
+    $server->send(\@send_2);
 
     $done1->recv;
     $done2->recv;
@@ -62,11 +63,11 @@ my $context = ZMQx::Class->context;
     my $server = ZMQx::Class->socket($context, 'REP', bind =>'tcp://*:'.$port );
 
     my $client = ZMQx::Class->socket($context, 'REQ', connect =>'tcp://localhost:'.$port );
-    $client->send($message);
+    $client->send([$message]);
 
     my $server_got = $server->receive_multipart(1);
     cmp_deeply($server_got,[$message],'Server got message');
-    $server->send_multipart('ok',@$server_got);
+    $server->send(['ok',@$server_got],ZMQ_DONTWAIT);
     sleep(1);
     my $res = $client->wait_for_message;
 
