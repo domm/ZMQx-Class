@@ -24,14 +24,22 @@ has 'type' => (
     required=>1,
 );
 
+has '_connected' => (
+    is=>'rw',
+    isa=>'Bool',
+    default=>0,
+);
+
 sub bind {
     my ($self, $address) = @_;
     zmq_bind($self->socket,$address);
+    $self->_connected(1);
 }
 
 sub connect {
     my ($self, $address) = @_;
     zmq_connect($self->socket,$address);
+    $self->_connected(1);
 }
 
 sub setsockopt {
