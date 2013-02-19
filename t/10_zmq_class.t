@@ -32,6 +32,14 @@ lives_ok {
     ZMQx::Class->socket($context, 'PULL', connect=>'tcp://*:5599');
 } "init socket & bind";
 
+{
+    my $sock;
+    lives_ok {
+        $sock = ZMQx::Class->socket($context, 'PULL', connect=>'tcp://*:5599', { sndtimeo=>33 });
+    } "init socket with opts & bind";
+    is($sock->get_sndtimeo,33,'sock opt set');
+};
+
 dies_ok {
     ZMQx::Class->socket($context, 'PULL', teleport=>'tcp://*:5599');
 } "cannot init socket & teleport";

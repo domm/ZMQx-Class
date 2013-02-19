@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use 5.010;
 use ZMQx::Class::Socket;
-use Carp qw(croak);
+use Carp qw(croak carp);
 
 our $VERSION = "0.003";
 # ABSTRACT: OO Interface to ZMQ
@@ -55,6 +55,19 @@ sub socket {
         socket => zmq_socket($context,$types{$type}),
         type   => $type,
     );
+
+    if ($opts) {
+        while (my ($opt,$val) = each %$opts) {
+            my $method = 'set_'.$opt;
+            if ($socket->can($method)) {
+                $socket->$method($val);
+            }
+            else {
+                carp "no such sockopt $opt";
+            }
+        }
+    }
+
     if ($connect && $address) {
         if ($connect eq 'bind') {
             $socket->bind($address);
