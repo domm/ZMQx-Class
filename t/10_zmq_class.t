@@ -12,7 +12,13 @@ isa_ok($context,'ZMQ::LibZMQ3::Context');
 foreach (qw(REQ REP DEALER ROUTER PULL PUSH PUB SUB XPUB XSUB PAIR)) {
     lives_ok {
         ZMQx::Class->socket($context, $_);
-    } "could init socket $_";
+    } "could init socket $_ with context";
+}
+
+foreach (qw(REQ REP DEALER ROUTER PULL PUSH PUB SUB XPUB XSUB PAIR)) {
+    lives_ok {
+        ZMQx::Class->socket($_);
+    } "could init socket $_ without context";
 }
 
 dies_ok { ZMQx::Class->socket($context, "NOSUCHSOCK") }

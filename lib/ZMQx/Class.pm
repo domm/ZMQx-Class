@@ -37,8 +37,20 @@ sub context {
 }
 
 sub socket {
-    my ($class, $context, $type, $connect, $address ) = @_;
+    my $class = shift;
+    my $context_or_type = shift;
+    my ($context,$type);
+    if (ref($context_or_type) eq 'ZMQ::LibZMQ3::Context') {
+        $context = $context_or_type;
+        $type = shift;
+    }
+    else {
+        $context = $class->context;
+        $type = $context_or_type;
+    }
+    my ($connect, $address, $opts ) = @_;
     croak "no such socket type: $type" unless defined $types{$type};
+
     my $socket = ZMQx::Class::Socket->new(
         socket => zmq_socket($context,$types{$type}),
         type   => $type,
