@@ -44,21 +44,6 @@ sub getsockopt {
     zmq_getsockopt($self->socket, @_);
 }
 
-#sub send {
-#    my ($self, $msg) = @_;
-#    zmq_msg_send($msg, $self->socket);
-#}
-#
-#sub send_multipart { # remove, make send smarter
-#    my ($self, @parts) = @_;
-#    my $socket = $self->socket;
-#    my $last = pop(@parts);
-#    foreach (@parts) {
-#        zmq_msg_send( $_, $socket, ZMQ_SNDMORE );
-#    }
-#    zmq_msg_send($last, $socket );
-#}
-
 sub send {
     my ($self, $parts, $flags) = @_;
     $flags //= 0;
