@@ -73,6 +73,13 @@ sub send {
 }
 
 sub receive_multipart {
+    carp 'DEPRECATED! Use $socket->receive() instead';
+    my $rv = receive(@_);
+    *{receive_multipart} = *{receive};
+    return $rv;
+}
+
+sub receive {
     my ($self, $blocking) = @_;
     my $socket = $self->socket;
     my @parts;
