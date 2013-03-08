@@ -74,12 +74,19 @@ sub receive_multipart {
     my ($self, $blocking) = @_;
     my $socket = $self->socket;
     my @parts;
-    while ( my $rmsg = zmq_recvmsg( $socket, $blocking ? 0 : ZMQ_DONTWAIT)) {
-        push (@parts,zmq_msg_data( $rmsg ));
+    while (1) {
+        my $msg = zmq_msg_init();
+        my $rv  = zmq_msg_recv($msg, $socket, $blocking ? 0 : ZMQ_DONTWAIT);
+        return if $rv == -1;
+        push (@parts,zmq_msg_data( $msg ));
         if (!zmq_getsockopt($socket, ZMQ_RCVMORE)) {
-            return \@parts;
+            last;
         }
     }
+    if (@parts) {
+        return \@parts;
+    }
+    return;
 }
 
 =method receive_all_multipart_messages
