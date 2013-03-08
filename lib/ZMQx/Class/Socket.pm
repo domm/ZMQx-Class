@@ -65,9 +65,11 @@ sub send {
     my $socket = $self->socket;
     my $mflags = $flags ? $flags | ZMQ_SNDMORE : ZMQ_SNDMORE;
     foreach (0 .. $max_idx - 1) {
-        zmq_msg_send( $parts->[$_], $socket, $mflags);
+        my $rv = zmq_msg_send( $parts->[$_], $socket, $mflags);
+        return $rv if $rv == -1;
     }
-    zmq_msg_send( $parts->[$max_idx], $socket, $flags);
+    my $rv = zmq_msg_send( $parts->[$max_idx], $socket, $flags);
+    return $rv;
 }
 
 sub receive_multipart {
