@@ -89,23 +89,6 @@ sub receive_multipart {
     return;
 }
 
-sub wait_for_message {
-    my $socket = shift;
-    my $msg;
-    my $got_message = AnyEvent->condvar;
-    my $fh = $socket->get_fh;
-    my $watcher = AnyEvent->io (
-        fh      => $fh,
-        poll    => "r",
-        cb      => sub {
-            $msg = $socket->receive_multipart;
-            $got_message->send;
-        },
-    );
-    $got_message->recv;
-    return $msg;
-}
-
 sub subscribe {
     my ($self, $subscribe) = @_;
     croak('$socket->subscribe only works on SUB sockets') unless $self->type =~/^X?SUB$/;
