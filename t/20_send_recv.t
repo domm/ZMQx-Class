@@ -14,7 +14,8 @@ diag("running zmq on port $port");
     my $pull = ZMQx::Class->socket($context, 'PULL', bind =>'tcp://*:'.$port );
     my $push = ZMQx::Class->socket($context, 'PUSH', connect =>'tcp://localhost:'.$port );
     $push->send(['Hallo Welt']);
-    my $got = $pull->receive_multipart('blocking');
+    my $got = $pull->receive('blocking');
+ #   my $got = $pull->receive('blocking');
     cmp_deeply($got,['Hallo Welt'],'push-pull');
 }
 
@@ -24,7 +25,7 @@ diag("running zmq on port $port");
 
     my @send = ('Hello','World');
     $client->send(\@send);
-    my $got = $server->receive_multipart('blocking');
+    my $got = $server->receive('blocking');
     cmp_deeply($got,\@send,'req-rep');
 }
 
