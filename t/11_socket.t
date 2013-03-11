@@ -29,12 +29,35 @@ subtest 'nice set/get methods' => sub {
     lives_ok{ $socket->set_sndhwm($val) } 'set_sndhwm';
     lives_ok{ $got = $socket->get_sndhwm } 'get_sndhwm';
     is($got,$val,'got value back');
+
+    is($socket->type,'PULL', '$socket->type');
+};
+
+subtest 'set after connect works' => sub {
+    my $val = 75;
+    my $got;
+
+    lives_ok{ $socket->set_linger($val) } 'set_linger';
+    lives_ok{ $got = $socket->get_linger } 'get_linger';
+    is($got,$val,'got value back');
 };
 
 subtest 'warn after connect' => sub {
-    my $socket2 = ZMQx::Class->socket($context, 'PULL', bind =>'tcp://*:'.$port );
-    warning_is { $socket2->set_sndhwm(12); } "Setting 'ZMQ_SNDHWM' only works before connect/bind. Value not stored!", 'got a warning';
-    is($socket2->get_sndhwm,'1000','get did not work');
+    my $sock = ZMQx::Class->socket('PULL', bind =>'tcp://*:'.($port+1) );
+    warning_is { $sock->set_sndhwm(12); } "Setting 'ZMQ_SNDHWM' only works before connect/bind. Value not stored!", 'got a warning';
+    is($sock->get_sndhwm,'1000','get did not work');
+};
+
+subtest 'subscribe on noSUB' => sub {
+    my $sock = ZMQx::Class->socket('REQ');
+    throws_ok { $sock->subscribe('foo') } qr/subscribe only works on SUB/,'subscribe only works on SUB';
+    my $sock2 = ZMQx::Class->socket('SUB');
+    throws_ok { $sock2->subscribe() } qr/required parameter.*missing/,'subcribe missing';
+};
+
+subtest 'deprecated' => sub {
+    my $sock = ZMQx::Class->socket('PULL', bind =>'tcp://*:'.($port+1) );
+    warning_like { $sock->receive_multipart() } qr/DEPRECATED/,'receive_multipart() is deprecated';
 };
 
 done_testing();
