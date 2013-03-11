@@ -101,7 +101,7 @@ sub receive {
 sub subscribe {
     my ($self, $subscribe) = @_;
     croak('$socket->subscribe only works on SUB sockets') unless $self->type =~/^X?SUB$/;
-    croak('required paramater $subscription missing') unless defined $subscribe;
+    croak('required parameter $subscription missing') unless defined $subscribe;
     zmq_setsockopt($self->socket,ZMQ_SUBSCRIBE,$subscribe);
 }
 
