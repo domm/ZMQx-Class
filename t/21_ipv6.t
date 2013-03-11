@@ -14,7 +14,7 @@ subtest 'push-pull using ipv6' => sub {
     my $pull = ZMQx::Class->socket($context, 'PULL', bind =>'tcp://::1:'.$port , { ipv4only=>0 });
     my $push = ZMQx::Class->socket($context, 'PUSH', connect =>'tcp://::1:'.$port, { ipv4only=>0 });
     $push->send(['Hallo Welt']);
-    my $got = $pull->receive_multipart('blocking');
+    my $got = $pull->receive('blocking');
     cmp_deeply($got,['Hallo Welt'],'push-pull');
 };
 

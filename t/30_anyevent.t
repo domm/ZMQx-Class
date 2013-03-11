@@ -21,9 +21,10 @@ my $context = ZMQx::Class->context;
     my $done1 = AnyEvent->condvar;
     my @got1;
     my $watcher1 = ZMQx::Class::AnyEvent->watcher($client1, sub {
-        my $msgs = $client1->receive_all_multipart_messages;
-        push(@got1,@$msgs);
-        $done1->send if @$msgs >= 2;
+        while (my $msgs = $client1->receive) {
+            push(@got1,$msgs);
+            $done1->send if @got1 >= 2;
+        }
     });
 
     my $client2 = ZMQx::Class->socket($context, 'SUB', connect =>'tcp://localhost:'.$port );
@@ -31,9 +32,10 @@ my $context = ZMQx::Class->context;
     my $done2 = AnyEvent->condvar;
     my @got2;
     my $watcher2 = ZMQx::Class::AnyEvent->watcher($client2, sub {
-        my $msgs = $client2->receive_all_multipart_messages;
-        push(@got2,@$msgs);
-        $done2->send if @$msgs >= 1;
+        while (my $msgs = $client2->receive) {
+            push(@got2,$msgs);
+            $done2->send if @got2 >= 1;
+        }
     });
 
     sleep(1);
@@ -65,11 +67,11 @@ my $context = ZMQx::Class->context;
     my $client = ZMQx::Class->socket($context, 'REQ', connect =>'tcp://localhost:'.$port );
     $client->send([$message]);
 
-    my $server_got = $server->receive_multipart(1);
+    my $server_got = $server->receive(1);
     cmp_deeply($server_got,[$message],'Server got message');
     $server->send(['ok',@$server_got],ZMQ_DONTWAIT);
     sleep(1);
-    my $res = $client->wait_for_message;
+    my $res = $client->receive(1);
 
     cmp_deeply($res,['ok',$message],'Client got response from server');
 }

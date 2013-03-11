@@ -65,68 +65,37 @@ sub send {
     my $socket = $self->socket;
     my $mflags = $flags ? $flags | ZMQ_SNDMORE : ZMQ_SNDMORE;
     foreach (0 .. $max_idx - 1) {
-        zmq_msg_send( $parts->[$_], $socket, $mflags);
+        my $rv = zmq_msg_send( $parts->[$_], $socket, $mflags);
+        return $rv if $rv == -1;
     }
-    zmq_msg_send( $parts->[$max_idx], $socket, $flags);
+    my $rv = zmq_msg_send( $parts->[$max_idx], $socket, $flags);
+    return $rv;
 }
 
 sub receive_multipart {
+    carp 'DEPRECATED! Use $socket->receive() instead';
+    my $rv = receive(@_);
+    *{receive_multipart} = *{receive};
+    return $rv;
+}
+
+sub receive {
     my ($self, $blocking) = @_;
     my $socket = $self->socket;
     my @parts;
-    while ( my $rmsg = zmq_recvmsg( $socket, $blocking ? 0 : ZMQ_DONTWAIT)) {
-        push (@parts,zmq_msg_data( $rmsg ));
+    while (1) {
+        my $msg = zmq_msg_init();
+        my $rv  = zmq_msg_recv($msg, $socket, $blocking ? 0 : ZMQ_DONTWAIT);
+        return if $rv == -1;
+        push (@parts,zmq_msg_data( $msg ));
         if (!zmq_getsockopt($socket, ZMQ_RCVMORE)) {
-            return \@parts;
+            last;
         }
     }
-}
-
-=method receive_all_multipart_messages
-
-    my $w;$w = AnyEvent->io (
-        fh => $fh,
-        poll => "r",
-        cb => sub {
-            my $msgs = receive_multipart_messages($pull);
-            foreach (@$msgs) {
-                say "got $_";
-            }
-        },
-    );
-
-=cut
-
-sub receive_all_multipart_messages {
-    my ($self, $blocking) = @_;
-    my $socket = $self->socket;
-    my @parts;
-    my @msgs;
-    while (my $rmsg = zmq_recvmsg( $socket, $blocking ? 0 : ZMQ_DONTWAIT)) {
-        push (@parts,zmq_msg_data( $rmsg ));
-        if (! zmq_getsockopt($socket, ZMQ_RCVMORE)) {
-            push(@msgs,[ @parts ]);
-            undef @parts;
-        }
+    if (@parts) {
+        return \@parts;
     }
-    return \@msgs;
-}
-
-sub wait_for_message {
-    my $socket = shift;
-    my $msg;
-    my $got_message = AnyEvent->condvar;
-    my $fh = $socket->get_fh;
-    my $watcher = AnyEvent->io (
-        fh      => $fh,
-        poll    => "r",
-        cb      => sub {
-            $msg = $socket->receive_multipart;
-            $got_message->send;
-        },
-    );
-    $got_message->recv;
-    return $msg;
+    return;
 }
 
 sub subscribe {
