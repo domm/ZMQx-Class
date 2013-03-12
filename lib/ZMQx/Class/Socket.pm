@@ -75,7 +75,7 @@ sub send {
 sub receive_multipart {
     my $rv = receive(@_);
     carp 'DEPRECATED! Use $socket->receive() instead';
-    *{receive_multipart} = *{receive} unless $ENV{HARNESS_ACTIVE}==1;
+    *{receive_multipart} = *{receive} unless $ENV{HARNESS_ACTIVE};
     return $rv;
 }
 
