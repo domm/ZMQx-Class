@@ -60,5 +60,9 @@ subtest 'deprecated' => sub {
     warning_like { $sock->receive_multipart() } qr/DEPRECATED/,'receive_multipart() is deprecated';
 };
 
+subtest 'deprecated' => sub {
+    my $sock = ZMQx::Class->socket('PULL', bind =>'tcp://*:'.($port+1) );
+    warning_like { $sock->get_fh() } qr/DEPRECATED/,'get_fh() is deprecated';
+};
 done_testing();
 
