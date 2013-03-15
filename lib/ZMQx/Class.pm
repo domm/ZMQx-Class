@@ -5,7 +5,7 @@ use 5.010;
 use ZMQx::Class::Socket;
 use Carp qw(croak carp);
 
-our $VERSION = "0.003";
+our $VERSION = "0.004";
 # ABSTRACT: OO Interface to ZMQ
 my $__CONTEXT;
 
@@ -82,4 +82,46 @@ sub socket {
     return $socket;
 }
 
-1;
+q{ listening to: Tosca - Odeon };
+
+__END__
+
+=head1 SYNOPSIS
+
+  # a ZeroMQ publisher
+  # see example/publisher.pl
+  use ZMQx::Class;
+  my $publisher = ZMQx::Class->socket( 'PUB', bind => 'tcp://*:10000' );
+  
+  while ( 1 ) {
+      my $random = int( rand ( 10_000 ) );
+      say "sending $random hello";
+      $publisher->send( [ $random, 'hello' ] );
+      select( undef, undef, undef, 0.1);
+  }
+  
+  
+  # a ZeroMQ subscriber
+  # see example/subscriber.pl
+  use ZMQx::Class;
+  use ZMQx::Class::Anyevent;
+  
+  my $subscriber = ZMQx::Class->socket( 'SUB', connect => 'tcp://localhost:10000' );
+  $subscriber->subscribe( '1' );
+  
+  my $watcher = ZMQx::Class::AnyEvent->watcher( $subscriber, sub {
+      while ( my $msg = $subscriber->receive ) {
+          say "got $msg->[0] saying $msg->[1]";
+      }
+  });
+  AnyEvent->condvar->recv;
+
+=head1 DESCRIPTION
+
+C<ZMQx::Class> provides an object oriented & Perlish interface to L<ZeroMQ|http://www.zeromq.org/> 3.2. It builds on <ZMQ::LibZMQ3|https://metacpan.org/module/ZMQ::LibZMQ3>.
+
+Before you use C<ZMQx::Class>, please read the excellent <ZeroMQ Guide|http://zguide.zeromq.org>. It's a fun and interesting read, containing everything you need to get started with ZeroMQ, including lots of example code.
+
+
+
+

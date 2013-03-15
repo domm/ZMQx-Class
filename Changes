@@ -1,5 +1,11 @@
 Revision history for ZMQx::Class
 
+0.004   2013-02-19T22:07:43+0100
+    - warn when trying to set a sockopt after connecting (Thomas Klausner)
+    - pass sockopts to ZMQx::Class->socket (Thomas Klausner)
+    - ZMQx::Class->socket now works without $context (gets it from singleton)
+
+
 0.003   2013-01-18T09:43:30+0100
     - smarter send method that can handle single, multipart and
       flags (Thomas Klausner)

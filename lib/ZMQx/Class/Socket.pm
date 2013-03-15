@@ -73,9 +73,9 @@ sub send {
 }
 
 sub receive_multipart {
-    carp 'DEPRECATED! Use $socket->receive() instead';
     my $rv = receive(@_);
-    *{receive_multipart} = *{receive};
+    carp 'DEPRECATED! Use $socket->receive() instead';
+    *{receive_multipart} = *{receive} unless $ENV{HARNESS_ACTIVE};
     return $rv;
 }
 
@@ -101,7 +101,7 @@ sub receive {
 sub subscribe {
     my ($self, $subscribe) = @_;
     croak('$socket->subscribe only works on SUB sockets') unless $self->type =~/^X?SUB$/;
-    croak('required paramater $subscription missing') unless defined $subscribe;
+    croak('required parameter $subscription missing') unless defined $subscribe;
     zmq_setsockopt($self->socket,ZMQ_SUBSCRIBE,$subscribe);
 }
 
