@@ -105,7 +105,13 @@ sub subscribe {
     zmq_setsockopt($self->socket,ZMQ_SUBSCRIBE,$subscribe);
 }
 
-sub get_fh {
+sub get_fh { 
+    carp 'DEPRECATED! Use $socket->get_fd() instead';
+    my $rv = get_fd(@_);
+    *{get_fh} = *{get_fd}; 
+    return $rv;
+}
+sub get_fd {
     my $self = shift;
     return zmq_getsockopt($self->socket, ZMQ_FD);
 }
