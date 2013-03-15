@@ -9,9 +9,9 @@ use AnyEvent;
 
 sub watcher {
     my ($class, $socket, $callback) = @_;
-    my $fh = $socket->get_fh;
+    my $fd = $socket->get_fd;
     my $watcher = AnyEvent->io (
-        fh      => $fh,
+        fh      => $fd,
         poll    => "r",
         cb      => $callback
     );
