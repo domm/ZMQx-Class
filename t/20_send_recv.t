@@ -11,12 +11,27 @@ my $port = int(rand(64)).'025';
 diag("running zmq on port $port");
 
 {   # push-pull
-    my $pull = ZMQx::Class->socket($context, 'PULL', bind =>'tcp://*:'.$port );
-    my $push = ZMQx::Class->socket($context, 'PUSH', connect =>'tcp://localhost:'.$port );
-    $push->send(['Hallo Welt']);
-    my $got = $pull->receive('blocking');
- #   my $got = $pull->receive('blocking');
-    cmp_deeply($got,['Hallo Welt'],'push-pull');
+    foreach my $addr ("inproc://wortitor.ti") {
+        diag($addr);
+        my $pull = ZMQx::Class->socket($context, 'PAIR', bind =>$addr );
+        my $push = ZMQx::Class->socket($context, 'PAIR', connect =>$addr );
+        $push->send(['Hallo Welt']);
+        my $got = $pull->receive('blocking');
+     #   my $got = $pull->receive('blocking');
+        cmp_deeply($got,['Hallo Welt'],'push-pull');
+    }
+}
+
+{   # push-pull
+    foreach my $addr ("inproc://wortitor.ti") {
+        diag($addr);
+        my $pull = ZMQx::Class->socket($context, 'PULL', bind =>$addr );
+        my $push = ZMQx::Class->socket($context, 'PUSH', connect =>$addr );
+        $push->send(['Hallo Welt']);
+        my $got = $pull->receive('blocking');
+     #   my $got = $pull->receive('blocking');
+        cmp_deeply($got,['Hallo Welt'],'push-pull');
+    }
 }
 
 {   # req-rep
