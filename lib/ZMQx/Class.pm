@@ -46,7 +46,6 @@ sub socket {
         $type = shift;
     }
     else {
-        warn "FETCHING NEW CONTEXT $$";
         $context = $class->context;
         $type = $context_or_type;
     }
