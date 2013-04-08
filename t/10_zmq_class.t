@@ -31,13 +31,13 @@ subtest 'init, bind/connect, opts' => sub {
     } "bind";
 
     lives_ok {
-        ZMQx::Class->socket('PULL', connect=>'tcp://*:5599');
+        ZMQx::Class->socket('PULL', connect=>'tcp://localhost:5599');
     } "connect";
 
     {
         my $sock;
         lives_ok {
-            $sock = ZMQx::Class->socket('PULL', connect=>'tcp://*:5599', { sndtimeo=>33 });
+            $sock = ZMQx::Class->socket('PULL', connect=>'tcp://localhost:5599', { sndtimeo=>33 });
         } "connect & opts";
         is($sock->get_sndtimeo,33,'sock opt set');
     };
@@ -57,10 +57,19 @@ subtest 'die & other corner cases' => sub {
         is($sock->_connected,0,'not connected');
     }
 
+    {   # cannot bind again on same port
+        my $sock = ZMQx::Class->socket('PULL', bind=>'tcp://*:5599');
+        throws_ok { ZMQx::Class->socket('PULL', bind=>'tcp://*:5599') } qr/Cannot bind: Address already in use/, 'cannot bind to address already in use';
+
+    };
+
+    throws_ok {
+    ZMQx::Class->socket('PULL', connect=>'tcp://*:5598');
+    } qr/Cannot connect/, 'cannot connect to tcp://*';
 
     warning_is {
         ZMQx::Class->socket('PULL', bind=>'tcp://*:5599',{nosuchopt=>123});
-    } "no such sockopt nosuchopt";
+    } "no such sockopt nosuchopt", 'no such sockopt';
 
 };
 
