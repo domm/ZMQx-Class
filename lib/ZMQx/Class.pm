@@ -7,7 +7,7 @@ use Carp qw(croak carp);
 
 our $VERSION = "0.004";
 # ABSTRACT: OO Interface to ZMQ
-my $__CONTEXT;
+my $__CONTEXT = {};
 
 use ZMQ::LibZMQ3 qw(zmq_socket zmq_init);
 use ZMQ::Constants qw(ZMQ_REQ ZMQ_REP ZMQ_DEALER ZMQ_ROUTER ZMQ_PULL ZMQ_PUSH ZMQ_PUB ZMQ_SUB  ZMQ_XPUB ZMQ_XSUB ZMQ_PAIR);
@@ -26,14 +26,15 @@ my %types = (
     'PAIR'=>ZMQ_PAIR,
 );
 
-sub new_context {
+sub _new_context {
     my $class = shift;
     return zmq_init();
 }
 
 sub context {
     my $class = shift;
-    return $__CONTEXT //= $class->new_context(@_);
+#    warn 'INIT CONTEXT FOR '.$$ . join(', ', map { caller($_) } 0 .. 3);
+    return $__CONTEXT->{$$} //= $class->_new_context(@_);
 }
 
 sub socket {
@@ -52,8 +53,10 @@ sub socket {
     croak "no such socket type: $type" unless defined $types{$type};
 
     my $socket = ZMQx::Class::Socket->new(
-        socket => zmq_socket($context,$types{$type}),
+        _socket => zmq_socket($context,$types{$type}),
         type   => $type,
+        __pid  => $$,
+        _init_opts_for_cloning => [$class, $type, @_],
     );
 
     if ($opts) {

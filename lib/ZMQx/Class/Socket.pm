@@ -13,8 +13,16 @@ use ZMQ::LibZMQ3;
 
 use ZMQ::Constants ':all';
 
-has 'socket' => (
-    is=>'ro',
+# TODO
+# has 'bind_or_connect',
+# has 'address',
+
+
+
+has '_init_opts_for_cloning' => ( is => 'ro', isa => "ArrayRef", default => sub {[]});
+
+has '_socket' => (
+    is=>'rw',
     isa=>'ZMQ::LibZMQ3::Socket',
     required=>1,
 );
@@ -29,6 +37,30 @@ has '_connected' => (
     isa=>'Bool',
     default=>0,
 );
+
+has '__pid' => ( is => 'rw', isa => 'Int', required => 1);
+
+sub socket {
+    my ( $self ) = @_;
+
+
+    if ( $$ != $self->__pid ) {
+        warn "Cloning into new Socket $$ != " .$self->__pid ;
+        warn "$$" . join(' , ', grep { $_ } caller($_)) for 0 .. 3;
+        my ($class, @call) = @{$self->_init_opts_for_cloning};
+        my $socket = $class->socket(@call);
+
+        $self->_socket($socket->socket);
+        $self->__pid($socket->__pid);
+
+        return $self->_socket;
+    }
+    else {
+
+        return $self->_socket;
+    }
+}
+
 
 sub bind {
     my ($self, $address) = @_;
@@ -57,12 +89,12 @@ sub send {
     $flags //= 0;
 
     my $max_idx = $#{$parts};
+    my $socket = $self->socket;
     if ($max_idx == 0) { # single part message
-        return zmq_msg_send($parts->[0], $self->socket, $flags);
+        return zmq_msg_send($parts->[0], $socket, $flags);
     }
 
     # multipart
-    my $socket = $self->socket;
     my $mflags = $flags ? $flags | ZMQ_SNDMORE : ZMQ_SNDMORE;
     foreach (0 .. $max_idx - 1) {
         my $rv = zmq_msg_send( $parts->[$_], $socket, $mflags);
