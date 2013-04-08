@@ -33,7 +33,6 @@ sub _new_context {
 
 sub context {
     my $class = shift;
-#    warn 'INIT CONTEXT FOR '.$$ . join(', ', map { caller($_) } 0 .. 3);
     return $__CONTEXT->{$$} //= $class->_new_context(@_);
 }
 

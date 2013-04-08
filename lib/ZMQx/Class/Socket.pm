@@ -40,8 +40,7 @@ has '_pid' => ( is => 'rw', isa => 'Int', required => 1);
 
 sub socket {
     my ( $self ) = @_;
-
-    if ( $$ != $self->_pid ) {
+    if ($$ != $self->_pid ) {
         # TODO instead of init_opts_for_cloning get stuff required to re-initate via getsockopt etc
         my ($class, @call) = @{$self->_init_opts_for_cloning};
         my $socket = $class->socket(@call);
@@ -54,13 +53,19 @@ sub socket {
 
 sub bind {
     my ($self, $address) = @_;
-    zmq_bind($self->socket,$address);
+    my $rv = zmq_bind($self->socket,$address);
+    if ($rv == -1) {
+        croak "Cannot bind: $!";
+    }
     $self->_connected(1);
 }
 
 sub connect {
     my ($self, $address) = @_;
-    zmq_connect($self->socket,$address);
+    my $rv = zmq_connect($self->socket,$address);
+    if ($rv == -1) {
+        croak "Cannot connect: $!";
+    }
     $self->_connected(1);
 }
 
