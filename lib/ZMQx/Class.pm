@@ -55,7 +55,7 @@ sub socket {
     my $socket = ZMQx::Class::Socket->new(
         _socket => zmq_socket($context,$types{$type}),
         type   => $type,
-        __pid  => $$,
+        _pid  => $$,
         _init_opts_for_cloning => [$class, $type, @_],
     );
 

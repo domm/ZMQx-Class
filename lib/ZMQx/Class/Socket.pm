@@ -17,8 +17,6 @@ use ZMQ::Constants ':all';
 # has 'bind_or_connect',
 # has 'address',
 
-
-
 has '_init_opts_for_cloning' => ( is => 'ro', isa => "ArrayRef", default => sub {[]});
 
 has '_socket' => (
@@ -38,29 +36,21 @@ has '_connected' => (
     default=>0,
 );
 
-has '__pid' => ( is => 'rw', isa => 'Int', required => 1);
+has '_pid' => ( is => 'rw', isa => 'Int', required => 1);
 
 sub socket {
     my ( $self ) = @_;
 
-
-    if ( $$ != $self->__pid ) {
-        warn "Cloning into new Socket $$ != " .$self->__pid ;
-        warn "$$" . join(' , ', grep { $_ } caller($_)) for 0 .. 3;
+    if ( $$ != $self->_pid ) {
+        # TODO instead of init_opts_for_cloning get stuff required to re-initate via getsockopt etc
         my ($class, @call) = @{$self->_init_opts_for_cloning};
         my $socket = $class->socket(@call);
 
         $self->_socket($socket->socket);
-        $self->__pid($socket->__pid);
-
-        return $self->_socket;
+        $self->_pid($socket->_pid);
     }
-    else {
-
-        return $self->_socket;
-    }
+    return $self->_socket;
 }
-
 
 sub bind {
     my ($self, $address) = @_;
