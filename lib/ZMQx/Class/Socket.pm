@@ -38,6 +38,16 @@ has '_connected' => (
 
 has '_pid' => ( is => 'rw', isa => 'Int', required => 1);
 
+=method socket
+
+    $socket->socket;
+
+Returns the underlying C<ZMQ::LibZMQ3::Socket> socket. You probably won't need to call this method yourself.
+
+When a process containg a socket is forked, a new instance of the socket will be set up for the child process.
+
+=cut
+
 sub socket {
     my ( $self ) = @_;
     if ($$ != $self->_pid ) {
@@ -51,6 +61,16 @@ sub socket {
     return $self->_socket;
 }
 
+=method
+
+    $socket->bind( $address );
+
+Bind a socket to an address. Use this for the "server" side, which usually is the more stable part of your infrastructure.
+
+C<bind> will C<die> if it cannot bind.
+
+=cut
+
 sub bind {
     my ($self, $address) = @_;
     my $rv = zmq_bind($self->socket,$address);
@@ -59,6 +79,16 @@ sub bind {
     }
     $self->_connected(1);
 }
+
+=method connect
+
+    $socket->connect( $address );
+
+Connect the socket to an address. Use this for the "client" side.
+
+C<connect> will C<die> if it cannot connect.
+
+=cut
 
 sub connect {
     my ($self, $address) = @_;
@@ -69,15 +99,50 @@ sub connect {
     $self->_connected(1);
 }
 
+=method setsockopt
+
+    use ZMQ::Constants qw( ZMQ_LINGER );
+    $socket->setsockopt( ZMQ_LINGER, 100 );
+
+Set a socket options using a constant. You will need to load the constant from C<ZMQ::Constants>.
+
+=cut
+
 sub setsockopt {
     my $self = shift;
     zmq_setsockopt($self->socket, @_);
 }
 
+=method getsockopt
+
+    use ZMQ::Constants qw( ZMQ_LINGER );
+    $socket->getsockopt( ZMQ_LINGER );
+
+Get a socket option value using a constant. You will need to load the constant from C<ZMQ::Constants>.
+
+=cut
+
 sub getsockopt {
     my $self = shift;
     zmq_getsockopt($self->socket, @_);
 }
+
+=method send
+
+    my $rv = $socket->send( \@message );
+    my $rv = $socket->send( \@message, ZMQ_DONTWAIT );
+
+Send a message over the socket.
+
+The message currently has the be an ARRAYREF (yes, even for single part messages). We might change the API to allow a simple string for a single part message..
+
+C<send> will automatically set C<ZMQ_SENDMORE> for multipart messages.
+
+You can pass flags to C<send>. Currently the only flag is C<ZMQ_DONTWAIT>.
+
+C<send> returns the number of bytes send in the last message (TODO this should be changes to the total number of bytes for the whole multipart message), or -1 on error.
+
+=cut
 
 sub send {
     my ($self, $parts, $flags) = @_;
@@ -105,6 +170,23 @@ sub receive_multipart {
     *{receive_multipart} = *{receive} unless $ENV{HARNESS_ACTIVE};
     return $rv;
 }
+
+=method receive
+
+    my $msg = $socket->receive;
+    my $msg = $socket->receive('blocking;);
+
+C<receive> will get the next message from the socket, if there is one.
+
+You can use the blocking mode (by passing a true value to C<receive>) to block the process until a message has been received (NOT a wise move if you are connected to a lot of clients! Use AnyEvent in this case)
+
+The message will always be a ARRAYREF containing one element per message part.
+
+Returns C<undef> if no message can be received.
+
+See t/30_anyevent.t for some examples
+
+=cut
 
 sub receive {
     my ($self, $blocking) = @_;
