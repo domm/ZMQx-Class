@@ -280,4 +280,32 @@ sub _setup_sockopt_helpers {
     }
 }
 
+=method anyevent_watcher
+
+  my $watcher = $socket->anyevent_watcher( sub {
+      while (my $msg = $socket->receive) {
+          # do something with msg
+      }
+  } );
+
+Set up an AnyEvent watcher that will call the passed sub when a new
+incoming message is received on the socket.
+
+Note that the C<$socket> object isn't passed to the callback. You can only access the C<$socket> thanks to closures.
+
+Please note that you will have to load C<AnyEvent> in your code!
+
+=cut
+
+sub anyevent_watcher {
+    my ($socket, $callback) = @_;
+    my $fd = $socket->get_fd;
+    my $watcher = AnyEvent->io (
+        fh      => $fd,
+        poll    => "r",
+        cb      => $callback
+    );
+    return $watcher;
+}
+
 1;
