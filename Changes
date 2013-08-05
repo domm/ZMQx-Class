@@ -1,5 +1,20 @@
 Revision history for ZMQx::Class
 
+0.005   2013-08-05T15:57:14+0200
+    - removed ZMQx::Class::AnyEvent in favour of $socket->anyevent_watcher
+      (Thomas Klausner)
+    - implemented $socket->send($string) (Thomas Klausner)
+    - croak if cannot bind/connect (Thomas Klausner)
+    - inproc push/pull (Thomas Klausner)
+    - better fork safety (Klaus Ita)
+    - use fd internally (Klaus Ita)
+    - started with docs, added a pub/sub example (Thomas Klausner)
+    - deprecated receive_multipart(), replaced by receive() (Thomas Klausner)
+    - removed  wait_for_message (suggested by Marc Lehmann) (Thomas Klausner)
+    - removed receive_all_multipart_messages (Thomas Klausner)
+    - proper & working implementation of receive_multipart (Thomas Klausner)
+    - aded get_events (Thomas Klausner)
+
 0.004   2013-02-19T22:07:43+0100
     - warn when trying to set a sockopt after connecting (Thomas Klausner)
     - pass sockopts to ZMQx::Class->socket (Thomas Klausner)
