@@ -13,9 +13,9 @@ diag("running zmq on port $port");
 subtest 'push-pull tcp' => sub {
     my $pull = ZMQx::Class->socket($context, 'PULL', bind =>'tcp://*:'.$port );
     my $push = ZMQx::Class->socket($context, 'PUSH', connect =>'tcp://localhost:'.$port );
-    $push->send(['Hallo Welt']);
+    $push->send(['Hallo','Welt']);
     my $got = $pull->receive('blocking');
-    cmp_deeply($got,['Hallo Welt'],'got message');
+    cmp_deeply($got,['Hallo','Welt'],'got message');
 };
 
 subtest 'push-pull inproc' => sub {
@@ -35,6 +35,16 @@ subtest 'req-rep tcp' => sub {
     my $got = $server->receive('blocking');
     cmp_deeply($got,\@send,'got message');
 };
+
+subtest 'send a string' => sub {
+    my $pull = ZMQx::Class->socket($context, 'PULL', bind =>'tcp://*:'.$port );
+    my $push = ZMQx::Class->socket($context, 'PUSH', connect =>'tcp://localhost:'.$port );
+    $push->send('Hallo Welt');
+    my $got = $pull->receive('blocking');
+    cmp_deeply($got,['Hallo Welt'],'got message');
+};
+
+
 
 done_testing();
 
