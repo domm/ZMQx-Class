@@ -4,7 +4,7 @@ use 5.010;
 
 use Test::Most;
 use ZMQx::Class;
-use ZMQx::Class::AnyEvent;
+use AnyEvent;
 use ZMQ::LibZMQ3;
 use Data::Dumper;
 use ZMQ::Constants qw(ZMQ_DONTWAIT);
@@ -20,7 +20,7 @@ my $context = ZMQx::Class->context;
     $client1->subscribe('');
     my $done1 = AnyEvent->condvar;
     my @got1;
-    my $watcher1 = ZMQx::Class::AnyEvent->watcher($client1, sub {
+    my $watcher1 = $client1->anyevent_watcher(sub {
         while (my $msgs = $client1->receive) {
             push(@got1,$msgs);
             $done1->send if @got1 >= 2;
@@ -31,7 +31,7 @@ my $context = ZMQx::Class->context;
     $client2->subscribe('222');
     my $done2 = AnyEvent->condvar;
     my @got2;
-    my $watcher2 = ZMQx::Class::AnyEvent->watcher($client2, sub {
+    my $watcher2 = $client2->anyevent_watcher(sub {
         while (my $msgs = $client2->receive) {
             push(@got2,$msgs);
             $done2->send if @got2 >= 1;

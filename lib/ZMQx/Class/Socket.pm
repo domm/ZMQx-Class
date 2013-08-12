@@ -131,11 +131,12 @@ sub getsockopt {
 
     my $rv = $socket->send( \@message );
     my $rv = $socket->send( \@message, ZMQ_DONTWAIT );
+    my $rv = $socket->send( $message );
 
 Send a message over the socket.
 
-The message currently has the be an ARRAYREF (yes, even for single part messages). We might change the API to allow a simple string for a single part message..
-
+The message can either be a plain string or an ARRAYREF which will be
+send as a multipart message (with one message per array element).
 C<send> will automatically set C<ZMQ_SENDMORE> for multipart messages.
 
 You can pass flags to C<send>. Currently the only flag is C<ZMQ_DONTWAIT>.
@@ -148,6 +149,9 @@ sub send {
     my ($self, $parts, $flags) = @_;
     $flags //= 0;
 
+    if (!ref($parts)) {
+        $parts = [$parts];
+    }
     my $max_idx = $#{$parts};
     my $socket = $self->socket;
     if ($max_idx == 0) { # single part message
@@ -274,6 +278,34 @@ sub _setup_sockopt_helpers {
             return zmq_getsockopt($self->socket,$constval);
         });
     }
+}
+
+=method anyevent_watcher
+
+  my $watcher = $socket->anyevent_watcher( sub {
+      while (my $msg = $socket->receive) {
+          # do something with msg
+      }
+  } );
+
+Set up an AnyEvent watcher that will call the passed sub when a new
+incoming message is received on the socket.
+
+Note that the C<$socket> object isn't passed to the callback. You can only access the C<$socket> thanks to closures.
+
+Please note that you will have to load C<AnyEvent> in your code!
+
+=cut
+
+sub anyevent_watcher {
+    my ($socket, $callback) = @_;
+    my $fd = $socket->get_fd;
+    my $watcher = AnyEvent->io (
+        fh      => $fd,
+        poll    => "r",
+        cb      => $callback
+    );
+    return $watcher;
 }
 
 1;

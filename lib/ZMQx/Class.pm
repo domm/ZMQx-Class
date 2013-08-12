@@ -5,7 +5,7 @@ use 5.010;
 use ZMQx::Class::Socket;
 use Carp qw(croak carp);
 
-our $VERSION = "0.004";
+our $VERSION = "0.005";
 # ABSTRACT: OO Interface to ZMQ
 my $__CONTEXT = {};
 
@@ -159,12 +159,12 @@ __END__
   # a ZeroMQ subscriber
   # see example/subscriber.pl
   use ZMQx::Class;
-  use ZMQx::Class::Anyevent;
+  use Anyevent;
   
   my $subscriber = ZMQx::Class->socket( 'SUB', connect => 'tcp://localhost:10000' );
   $subscriber->subscribe( '1' );
   
-  my $watcher = ZMQx::Class::AnyEvent->watcher( $subscriber, sub {
+  my $watcher = $subscriber->anyevent_watcher( sub {
       while ( my $msg = $subscriber->receive ) {
           say "got $msg->[0] saying $msg->[1]";
       }
