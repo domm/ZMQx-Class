@@ -10,20 +10,21 @@ our $VERSION = "0.005";
 my $__CONTEXT = {};
 
 use ZMQ::LibZMQ3 qw(zmq_socket zmq_init);
-use ZMQ::Constants qw(ZMQ_REQ ZMQ_REP ZMQ_DEALER ZMQ_ROUTER ZMQ_PULL ZMQ_PUSH ZMQ_PUB ZMQ_SUB  ZMQ_XPUB ZMQ_XSUB ZMQ_PAIR);
+use ZMQ::Constants
+    qw(ZMQ_REQ ZMQ_REP ZMQ_DEALER ZMQ_ROUTER ZMQ_PULL ZMQ_PUSH ZMQ_PUB ZMQ_SUB  ZMQ_XPUB ZMQ_XSUB ZMQ_PAIR);
 
 my %types = (
-    'REQ'=>ZMQ_REQ,
-    'REP'=>ZMQ_REP,
-    'DEALER'=>ZMQ_DEALER,
-    'ROUTER'=>ZMQ_ROUTER,
-    'PULL'=>ZMQ_PULL,
-    'PUSH'=>ZMQ_PUSH,
-    'PUB'=>ZMQ_PUB,
-    'SUB'=>ZMQ_SUB,
-    'XPUB'=>ZMQ_XPUB,
-    'XSUB'=>ZMQ_XSUB,
-    'PAIR'=>ZMQ_PAIR,
+    'REQ'    => ZMQ_REQ,
+    'REP'    => ZMQ_REP,
+    'DEALER' => ZMQ_DEALER,
+    'ROUTER' => ZMQ_ROUTER,
+    'PULL'   => ZMQ_PULL,
+    'PUSH'   => ZMQ_PUSH,
+    'PUB'    => ZMQ_PUB,
+    'SUB'    => ZMQ_SUB,
+    'XPUB'   => ZMQ_XPUB,
+    'XSUB'   => ZMQ_XSUB,
+    'PAIR'   => ZMQ_PAIR,
 );
 
 sub _new_context {
@@ -90,31 +91,31 @@ If you really need to, you can pass a context object as the first agrument to C<
 =cut
 
 sub socket {
-    my $class = shift;
+    my $class           = shift;
     my $context_or_type = shift;
-    my ($context,$type);
-    if (ref($context_or_type) eq 'ZMQ::LibZMQ3::Context') {
+    my ( $context, $type );
+    if ( ref($context_or_type) eq 'ZMQ::LibZMQ3::Context' ) {
         $context = $context_or_type;
-        $type = shift;
+        $type    = shift;
     }
     else {
         $context = $class->context;
-        $type = $context_or_type;
+        $type    = $context_or_type;
     }
-    my ($connect, $address, $opts ) = @_;
+    my ( $connect, $address, $opts ) = @_;
     croak "no such socket type: $type" unless defined $types{$type};
 
     my $socket = ZMQx::Class::Socket->new(
-        _socket => zmq_socket($context,$types{$type}),
-        type   => $type,
-        _pid  => $$,
-        _init_opts_for_cloning => [$class, $type, @_],
+        _socket => zmq_socket( $context, $types{$type} ),
+        type    => $type,
+        _pid    => $$,
+        _init_opts_for_cloning => [ $class, $type, @_ ],
     );
 
     if ($opts) {
-        while (my ($opt,$val) = each %$opts) {
-            my $method = 'set_'.$opt;
-            if ($socket->can($method)) {
+        while ( my ( $opt, $val ) = each %$opts ) {
+            my $method = 'set_' . $opt;
+            if ( $socket->can($method) ) {
                 $socket->$method($val);
             }
             else {
@@ -123,11 +124,11 @@ sub socket {
         }
     }
 
-    if ($connect && $address) {
-        if ($connect eq 'bind') {
+    if ( $connect && $address ) {
+        if ( $connect eq 'bind' ) {
             $socket->bind($address);
         }
-        elsif ($connect eq 'connect') {
+        elsif ( $connect eq 'connect' ) {
             $socket->connect($address);
         }
         else {
