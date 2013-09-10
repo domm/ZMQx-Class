@@ -173,7 +173,7 @@ __END__
 
 =head1 DESCRIPTION
 
-C<ZMQx::Class> provides an object oriented & Perlish interface to L<ZeroMQ|http://www.zeromq.org/> 3.2. It builds on <ZMQ::LibZMQ3|https://metacpan.org/module/ZMQ::LibZMQ3>.
+C<ZMQx::Class> provides an object oriented & Perlish interface to L<ZeroMQ|http://www.zeromq.org/> 3.2. It builds on L<ZMQ::LibZMQ3|https://metacpan.org/module/ZMQ::LibZMQ3>.
 
 Before you use C<ZMQx::Class>, please read the excellent <ZeroMQ Guide|http://zguide.zeromq.org>. It's a fun and interesting read, containing everything you need to get started with ZeroMQ, including lots of example code.
 
@@ -182,6 +182,8 @@ Before you use C<ZMQx::Class>, please read the excellent <ZeroMQ Guide|http://zg
 L<ZMQ|https://metacpan.org/module/ZMQ::Socket> is another perlish interface to libzmq. We found it to still be a bit too low-level (eg, you still need to import the sockopt-constants). ZMQ support libzmq 2 and 3, and promises a single interface to both. We are only interested in libzmq 3. ZMQx::Class includes some smartness to handle setup of context objects, even across forks. Lastly, we found this note from the docs not very promising: "Personally, I'd recommend only using this module for your one-shot scripts, and use ZMQ::LibZMQ* for all other uses."
 
 
+=head1 THANKS
 
+Thanks to L<Validad AG|http://validad.com> for sponsoring the development of this module.
 
 
