@@ -320,12 +320,12 @@ sub anyevent_watcher {
     return $watcher;
 }
 
-#sub close {
-#    my $self = shift;
-#    warn "$$ CLOSE SOCKET";
-#    zmq_close($self->_socket);
-#
-#}
+sub close {
+    my $self = shift;
+    warn "$$ CLOSE SOCKET";
+    zmq_close($self->_socket);
+
+}
 #
 #sub DESTROY {
 #    my $self = shift;
