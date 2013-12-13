@@ -163,6 +163,7 @@ sub send {
     my $mflags = $flags ? $flags | ZMQ_SNDMORE : ZMQ_SNDMORE;
     foreach ( 0 .. $max_idx - 1 ) {
         my $rv = zmq_msg_send( $parts->[$_], $socket, $mflags );
+        #warn "send $rv $!";
         return $rv if $rv == -1;
     }
     my $rv = zmq_msg_send( $parts->[$max_idx], $socket, $flags );
@@ -201,6 +202,7 @@ sub receive {
         my $msg = zmq_msg_init();
         my $rv = zmq_msg_recv( $msg, $socket, $blocking ? 0 : ZMQ_DONTWAIT );
         return if $rv == -1;
+        #warn "receive rv $rv $!";
         push( @parts, zmq_msg_data($msg) );
         if ( !zmq_getsockopt( $socket, ZMQ_RCVMORE ) ) {
             last;
@@ -317,5 +319,18 @@ sub anyevent_watcher {
     );
     return $watcher;
 }
+
+sub close {
+    my $self = shift;
+    warn "$$ CLOSE SOCKET";
+    zmq_close($self->_socket);
+
+}
+#
+#sub DESTROY {
+#    my $self = shift;
+#    warn "$$ IN SOCKET DESTROY";
+#    zmq_close($self->_socket);
+#}
 
 1;
