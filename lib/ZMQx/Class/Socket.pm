@@ -9,9 +9,9 @@ use Moose;
 use Carp qw(croak carp);
 use namespace::autoclean;
 use Package::Stash;
-use ZMQ::LibZMQ3;
+use ZMQ::FFI;
 
-use ZMQ::Constants ':all';
+use ZMQ::FFI::Constants qw/:all/;
 
 # TODO
 # has 'bind_or_connect',
@@ -22,7 +22,7 @@ has '_init_opts_for_cloning' =>
 
 has '_socket' => (
     is       => 'rw',
-    isa      => 'ZMQ::LibZMQ3::Socket',
+    isa      => 'ZMQ::FFI::SocketBase',
     required => 1,
 );
 
@@ -74,11 +74,8 @@ C<bind> will C<die> if it cannot bind.
 
 sub bind {
     my ( $self, $address ) = @_;
-    my $rv = zmq_bind( $self->socket, $address );
-    if ( $rv == -1 ) {
-        croak "Cannot bind: $!";
-    }
-    $self->_connected(1);
+
+    $self->_socket->bind($address) && $self->_connected(1);
 }
 
 =method connect
@@ -93,11 +90,9 @@ C<connect> will C<die> if it cannot connect.
 
 sub connect {
     my ( $self, $address ) = @_;
-    my $rv = zmq_connect( $self->socket, $address );
-    if ( $rv == -1 ) {
-        croak "Cannot connect: $!";
-    }
-    $self->_connected(1);
+
+    $self->_socket->connect($address) && $self->_connected(1);
+
 }
 
 =method setsockopt
@@ -237,11 +232,34 @@ sub get_fd {
 
 {
     no strict 'refs';
-    my @sockopts_before_connect
-        = qw(ZMQ_SNDHWM ZMQ_RCVHWM ZMQ_AFFINITY ZMQ_IDENTITY ZMQ_RATE ZMQ_RECOVERY_IVL ZMQ_SNDBUF ZMQ_RCVBUF ZMQ_RECONNECT_IVL ZMQ_RECONNECT_IVL_MAX ZMQ_BACKLOG ZMQ_MAXMSGSIZE ZMQ_MULTICAST_HOPS ZMQ_RCVTIMEO ZMQ_SNDTIMEO ZMQ_IPV4ONLY ZMQ_EVENTS ZMQ_LAST_ENDPOINT);
+    my @sockopts_before_connect = qw(
+        ZMQ_AFFINITY
+        ZMQ_BACKLOG
+        ZMQ_EVENTS
+        ZMQ_IDENTITY
+        ZMQ_IPV4ONLY
+        ZMQ_LAST_ENDPOINT
+        ZMQ_MAXMSGSIZE
+        ZMQ_MULTICAST_HOPS
+        ZMQ_RATE
+        ZMQ_RCVBUF
+        ZMQ_RCVHWM
+        ZMQ_RCVTIMEO
+        ZMQ_RECONNECT_IVL
+        ZMQ_RECONNECT_IVL_MAX
+        ZMQ_RECOVERY_IVL
+        ZMQ_SNDBUF
+        ZMQ_SNDHWM 
+        ZMQ_SNDTIMEO
+    );
 
-    my @sockopts_after_connect
-        = qw(ZMQ_SUBSCRIBE ZMQ_UNSUBSCRIBE ZMQ_LINGER ZMQ_ROUTER_MANDATORY ZMQ_XPUB_VERBOSE);
+    my @sockopts_after_connect = qw(
+        ZMQ_LINGER
+        ZMQ_ROUTER_MANDATORY
+        ZMQ_SUBSCRIBE
+        ZMQ_UNSUBSCRIBE
+        ZMQ_XPUB_VERBOSE
+        );
 
     my $stash = Package::Stash->new(__PACKAGE__);
     foreach my $const (@sockopts_before_connect) {
@@ -260,34 +278,40 @@ sub _setup_sockopt_helpers {
     $get =~ s/^zmq_/get_/;
     no strict 'refs';
 
-    if ( $stash->has_symbol( '&' . $const ) ) {
-        my $constval = &$const;
-        if ($set_only_before_connect) {
-            $stash->add_symbol(
-                '&' . $set => sub {
-                    my $self = shift;
-                    if ( $self->_connected ) {
-                        carp
-                            "Setting '$const' only works before connect/bind. Value not stored!";
-                    }
-                    else {
-                        zmq_setsockopt( $self->socket, $constval, @_ );
-                    }
-                    return $self;
-                } );
-        }
-        else {
-            $stash->add_symbol(
-                '&' . $set => sub {
-                    my $self = shift;
-                    zmq_setsockopt( $self->socket, $constval, @_ );
-                    return $self;
-                } );
-        }
+#    warn "$const $set $get";
+
+    warn "OK : " . ZMQ::FFI::Constants->$const;
+    warn "$const NOT HERE" unless ZMQ::FFI::Constants->$const;
+    if ( my $constval = ZMQ::FFI::Constants->$const ) {
+#        my $constval = &$const;
+        # if ($set_only_before_connect) {
+        #     $stash->add_symbol(
+        #         '&' . $set => sub {
+        #             my $self = shift;
+        #             if ( $self->_connected ) {
+        #                 carp
+        #                     "Setting '$const' only works before connect/bind. Value not stored!";
+        #             }
+        #             else {
+        #                 zmq_setsockopt( $self->socket, $constval, @_ );
+        #             }
+        #             return $self;
+        #         } );
+        # }
+        # else {
+        #     $stash->add_symbol(
+        #         '&' . $set => sub {
+        #             my $self = shift;
+        #             zmq_setsockopt( $self->socket, $constval, @_ );
+        #             return $self;
+        #         } );
+        # }
+        warn "Installing $get";
         $stash->add_symbol(
             '&' . $get => sub {
                 my $self = shift;
-                return zmq_getsockopt( $self->socket, $constval );
+                return $self->_socket->get($constval, 'int');
+#                return zmq_getsockopt( $self->socket, $constval );
             } );
     }
 }

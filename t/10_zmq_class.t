@@ -16,7 +16,7 @@ subtest 'init socket without context' => sub {
 
 subtest 'init socket with context' => sub {
     my $context = ZMQx::Class->context;
-    isa_ok($context,'ZMQ::LibZMQ3::Context');
+    ok($context->does('ZMQ::FFI::ContextRole'));
 
     foreach (qw(REQ REP DEALER ROUTER PULL PUSH PUB SUB XPUB XSUB PAIR)) {
         lives_ok {
@@ -39,6 +39,8 @@ subtest 'init, bind/connect, opts' => sub {
         lives_ok {
             $sock = ZMQx::Class->socket('PULL', connect=>'tcp://localhost:5599', { sndtimeo=>33 });
         } "connect & opts";
+        #ok($sock->DOES('ZMQ::FFI::SocketBase'), "Is a ZMQx::Class::Socket");
+        isa_ok($sock, 'ZMQx::Class::Socket');
         is($sock->get_sndtimeo,33,'sock opt set');
     };
 };
