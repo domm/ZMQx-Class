@@ -10,9 +10,19 @@ our $VERSION = "0.006";
 my $__CONTEXT = {};
 
 use ZMQ::FFI;
-#use ZMQ::LibZMQ3 qw(zmq_socket zmq_init);
-use ZMQ::FFI::Constants
-    qw(ZMQ_REQ ZMQ_REP ZMQ_DEALER ZMQ_ROUTER ZMQ_PULL ZMQ_PUSH ZMQ_PUB ZMQ_SUB  ZMQ_XPUB ZMQ_XSUB ZMQ_PAIR);
+use ZMQ::FFI::Constants qw(
+    ZMQ_DEALER
+    ZMQ_PAIR
+    ZMQ_PUB
+    ZMQ_PULL
+    ZMQ_PUSH
+    ZMQ_REP
+    ZMQ_REQ
+    ZMQ_ROUTER
+    ZMQ_SUB
+    ZMQ_XPUB
+    ZMQ_XSUB
+);
 
 sub zmq_socket {
     my ($ctx, @stuff) = @_;

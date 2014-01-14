@@ -9,9 +9,10 @@ use Moose;
 use Carp qw(croak carp);
 use namespace::autoclean;
 use Package::Stash;
-use ZMQ::FFI;
 
-use ZMQ::FFI::Constants qw/:all/;
+use ZMQ::FFI;
+#use ZMQ::FFI::Constants qw/:all/;
+use ZMQx::Class::Constants ':all';
 
 # TODO
 # has 'bind_or_connect',
