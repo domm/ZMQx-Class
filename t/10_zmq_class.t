@@ -61,12 +61,12 @@ subtest 'die & other corner cases' => sub {
 
     {   # cannot bind again on same port
         my $sock = ZMQx::Class->socket('PULL', bind=>'tcp://*:5599');
-        throws_ok { ZMQx::Class->socket('PULL', bind=>'tcp://*:5599') } qr/Cannot bind: Address already in use/, 'cannot bind to address already in use';
+        throws_ok { ZMQx::Class->socket('PULL', bind=>'tcp://*:5599') } qr/Cannot bind.+Address already in use/, 'cannot bind to address already in use';
 
     };
 
     throws_ok {
-    ZMQx::Class->socket('PULL', connect=>'tcp://*:5598');
+        ZMQx::Class->socket('PULL', connect=>'tcp://*:5598');
     } qr/Cannot connect/, 'cannot connect to tcp://*';
 
     warning_is {

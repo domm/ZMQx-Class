@@ -10,7 +10,7 @@ our $VERSION = "0.006";
 my $__CONTEXT = {};
 
 use ZMQ::FFI;
-use ZMQ::FFI::Constants qw(
+use ZMQ::Constants qw(
     ZMQ_DEALER
     ZMQ_PAIR
     ZMQ_PUB
@@ -24,10 +24,6 @@ use ZMQ::FFI::Constants qw(
     ZMQ_XSUB
 );
 
-sub zmq_socket {
-    my ($ctx, @stuff) = @_;
-    ZMQ::call( "zmq_socket", $ctx, @stuff )
-}
 sub zmq_init { 
     return ZMQ::FFI->new( @_ )
 }
@@ -113,7 +109,7 @@ sub socket {
     my $class           = shift;
     my $context_or_type = shift;
     my ( $context, $type );
-    if ( ref($context_or_type) =~ /ZMQ::FFI::ZMQ\d::Context/ ) {
+    if ( ref($context_or_type) =~ /^ZMQ::FFI::ZMQ\d::Context/ ) {
         $context = $context_or_type;
         $type    = shift;
     }
@@ -123,7 +119,6 @@ sub socket {
     }
     my ( $connect, $address, $opts ) = @_;
     croak "no such socket type: $type" unless defined $types{$type};
-
     
     my $socket = ZMQx::Class::Socket->new(
         _socket => $context->socket( $types{$type} ),
