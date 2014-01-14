@@ -24,10 +24,6 @@ use ZMQ::Constants qw(
     ZMQ_XSUB
 );
 
-sub zmq_init { 
-    return ZMQ::FFI->new( @_ )
-}
-
 my %types = (
     'REQ'    => ZMQ_REQ,
     'REP'    => ZMQ_REP,
@@ -44,7 +40,7 @@ my %types = (
 
 sub _new_context {
     my $class = shift;
-    return zmq_init();
+    return ZMQ::FFI->new( @_ );
 }
 
 =method context
