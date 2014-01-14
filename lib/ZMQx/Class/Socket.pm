@@ -76,7 +76,7 @@ sub bind {
     my ( $self, $address ) = @_;
 
     eval {
-        $self->_socket->bind($address);
+        $self->socket->bind($address);
     };
     if ($@) {
         croak "Cannot bind $@";
@@ -100,7 +100,7 @@ sub connect {
     my ( $self, $address ) = @_;
 
     eval {
-        $self->_socket->connect($address);
+        $self->socket->connect($address);
     };
     if ($@) {
         croak "Cannot connect $@";
@@ -124,7 +124,7 @@ sub setsockopt {
     my ($self, $constval, @args) = @_;
 
     my $sockopt_type = ZMQ::Constants::get_sockopt_type( $constval );
-    return $self->_socket->set( $constval, $sockopt_type, @args );
+    return $self->socket->set( $constval, $sockopt_type, @args );
 
 }
 
@@ -141,7 +141,7 @@ sub getsockopt {
     my ($self, $constval) = @_;
 
     my $sockopt_type = ZMQ::Constants::get_sockopt_type( $constval );
-    return $self->_socket->get( $constval, $sockopt_type );
+    return $self->socket->get( $constval, $sockopt_type );
 
 }
 
@@ -172,7 +172,10 @@ sub send {
         $parts = [$parts];
     }
 
-    return $self->_socket->send_multipart($parts, $flags);
+
+    return ( $#{$parts} == 0 ) ?
+        $self->socket->send($parts->[0], $flags)
+        : $self->socket->send_multipart($parts, $flags);
 }
 
 sub receive_multipart {
@@ -206,7 +209,7 @@ sub receive {
     my @parts = ();
 
     eval {
-        @parts = $self->_socket->recv_multipart( $flags );
+        @parts = $self->socket->recv_multipart( $flags );
     };
     if ( $@ ) {
         return;
@@ -224,7 +227,7 @@ sub subscribe {
     croak('required parameter $subscription missing')
         unless defined $subscribe;
 
-    $self->_socket->subscribe( $subscribe );
+    $self->socket->subscribe( $subscribe );
 }
 
 sub get_fh {
@@ -236,7 +239,7 @@ sub get_fh {
 
 sub get_fd {
     my $self = shift;
-    return $self->_socket->get_fd();
+    return $self->socket->get_fd();
 }
 
 {
@@ -311,7 +314,7 @@ sub _setup_sockopt_helpers {
                             "Setting '$const' only works before connect/bind. Value not stored!";
                     }
                     else {
-                        $self->_socket->set( $constval, $sockopt_type, @_ );
+                        $self->socket->set( $constval, $sockopt_type, @_ );
                     }
                     return $self;
                 } );
@@ -320,7 +323,7 @@ sub _setup_sockopt_helpers {
             $stash->add_symbol(
                 '&' . $set => sub {
                     my $self = shift;
-                    $self->_socket->set( $constval, $sockopt_type, @_ );
+                    $self->socket->set( $constval, $sockopt_type, @_ );
                     return $self;
                 } );
         }
@@ -328,7 +331,7 @@ sub _setup_sockopt_helpers {
         $stash->add_symbol(
             '&' . $get => sub {
                 my $self = shift;
-                return $self->_socket->get($constval, $sockopt_type);
+                return $self->socket->get($constval, $sockopt_type);
             } );
     }
 }
@@ -364,7 +367,7 @@ sub anyevent_watcher {
 sub close {
     my $self = shift;
     warn "$$ CLOSE SOCKET";
-    $self->_socket->close();
+    $self->socket->close();
 
 }
 #
