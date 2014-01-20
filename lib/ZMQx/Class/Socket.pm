@@ -9,6 +9,7 @@ use Moose;
 use Carp qw(croak carp);
 use namespace::autoclean;
 use Package::Stash;
+use Encode qw//;
 
 use ZMQ::FFI;
 use ZMQ::Constants ':all';
@@ -43,9 +44,11 @@ has '_pid' => ( is => 'rw', isa => 'Int', required => 1 );
 
     $socket->socket;
 
-Returns the underlying C<ZMQ::LibZMQ3::Socket> socket. You probably won't need to call this method yourself.
+Returns the underlying C<ZMQ::LibZMQ3::Socket> socket. You probably won't need
+to call this method yourself.
 
-When a process containg a socket is forked, a new instance of the socket will be set up for the child process.
+When a process containg a socket is forked, a new instance of the socket will
+be set up for the child process.
 
 =cut
 
@@ -66,7 +69,8 @@ sub socket {
 
     $socket->bind( $address );
 
-Bind a socket to an address. Use this for the "server" side, which usually is the more stable part of your infrastructure.
+Bind a socket to an address. Use this for the "server" side, which usually is
+the more stable part of your infrastructure.
 
 C<bind> will C<die> if it cannot bind.
 
@@ -116,7 +120,8 @@ sub connect {
     use ZMQ::Constants qw( ZMQ_LINGER );
     $socket->setsockopt( ZMQ_LINGER, 100 );
 
-Set a socket options using a constant. You will need to load the constant from C<ZMQ::Constants>.
+Set a socket options using a constant. You will need to load the constant from
+C<ZMQ::Constants>.
 
 =cut
 
@@ -133,7 +138,8 @@ sub setsockopt {
     use ZMQ::Constants qw( ZMQ_LINGER );
     $socket->getsockopt( ZMQ_LINGER );
 
-Get a socket option value using a constant. You will need to load the constant from C<ZMQ::Constants>.
+Get a socket option value using a constant. You will need to load the constant
+from C<ZMQ::Constants>.
 
 =cut
 
@@ -159,7 +165,9 @@ C<send> will automatically set C<ZMQ_SENDMORE> for multipart messages.
 
 You can pass flags to C<send>. Currently the only flag is C<ZMQ_DONTWAIT>.
 
-C<send> returns the number of bytes send in the last message (TODO this should be changes to the total number of bytes for the whole multipart message), or -1 on error.
+C<send> returns the number of bytes send in the last message (TODO this should
+be changes to the total number of bytes for the whole multipart message), or
+-1 on error.
 
 =cut
 
@@ -171,7 +179,10 @@ sub send {
     if ( !ref($parts) ) {
         $parts = [$parts];
     }
-
+    foreach (0 .. $#{$parts} ) {
+        utf8::upgrade( $parts->[$_] );
+    
+    }
 
     return ( $#{$parts} == 0 ) ?
         $self->socket->send($parts->[0], $flags)
@@ -192,7 +203,9 @@ sub receive_multipart {
 
 C<receive> will get the next message from the socket, if there is one.
 
-You can use the blocking mode (by passing a true value to C<receive>) to block the process until a message has been received (NOT a wise move if you are connected to a lot of clients! Use AnyEvent in this case)
+You can use the blocking mode (by passing a true value to C<receive>) to block
+the process until a message has been received (NOT a wise move if you are
+connected to a lot of clients! Use AnyEvent in this case)
 
 The message will always be a ARRAYREF containing one element per message part.
 
@@ -205,9 +218,26 @@ See t/30_anyevent.t for some examples
 sub receive {
     my ( $self, $blocking ) = @_;
 
-    my $flags = $blocking ? 0 : ZMQ_DONTWAIT;
-    my @parts = ();
+    return $self->receive_string( $blocking );
+}
 
+=method receive_bytes
+
+    my $msg = $socket->receive_bytes;
+    my $msg = $socket->receive_bytes('blocking;);
+
+C<receive_bytes> will get the next message from the socket as bytes. If you
+want to receive a String (unicode), then you want to use C<receive_string>.
+
+=cut
+
+
+sub receive_bytes {
+    my ( $self, $blocking ) = @_;
+
+    my $flags = $blocking ? 0 : ZMQ_DONTWAIT;
+
+    my @parts;
     eval {
         @parts = $self->socket->recv_multipart( $flags );
     };
@@ -218,6 +248,75 @@ sub receive {
         return \@parts;
     }
     return;
+
+}
+
+=method receive_string
+
+    my $msg = $socket->receive_string
+    my $msg = $socket->receive_string('blocking');
+
+    my $msg = $socket->receive_string($blocking, [ $encoding ]);
+
+Receive a String message and decode it via L<Encode::decode('utf8', XX)> or an
+optional encoding.  Sending data over a wire means sending bytes.  Bytes do
+not know anything about encoding. If you want to send encoded strings, use
+this L<receive_string> method to L<receive> them correctly.
+
+If you want to use an explicit encoding you need to set the C<$blocking>
+variable to true or false.
+
+=cut
+
+sub receive_string {
+    my ($self, $blocking, $encoding) = @_;
+
+    $encoding ||= 'utf-8';
+
+    my $bytes_multi = $self->receive_bytes( $blocking );
+
+    return unless $bytes_multi;
+
+    my $str;
+    if ($encoding eq 'utf-8') {
+
+        $str = $self->_receive_string_utf8( $bytes_multi );
+
+    }
+    else {
+
+        $str = $self->_receive_string_generic( $bytes_multi, $encoding );
+        
+    }
+
+    if (@$str) {
+        return $str;
+    }
+
+    return;
+
+}
+
+sub _receive_string_generic {
+    my ($self, $ref, $encoding) = @_;
+
+    my @parts;
+    foreach ( 0 .. $#{$ref} ) {
+        push(@parts, Encode::decode($encoding, shift(@$ref) ) );
+    }
+    return \@parts;
+}
+
+sub _receive_string_utf8 {
+    my ($self, $ref) = @_;
+
+    if (ref $ref eq 'ARRAY') {
+        foreach ( 0 .. $#{$ref} ) {
+            Encode::_utf8_on($ref->[$_]);
+        }
+    }
+
+    return $ref;
 }
 
 sub subscribe {
@@ -347,7 +446,8 @@ sub _setup_sockopt_helpers {
 Set up an AnyEvent watcher that will call the passed sub when a new
 incoming message is received on the socket.
 
-Note that the C<$socket> object isn't passed to the callback. You can only access the C<$socket> thanks to closures.
+Note that the C<$socket> object isn't passed to the callback. You can only
+access the C<$socket> thanks to closures.
 
 Please note that you will have to load C<AnyEvent> in your code!
 
@@ -366,7 +466,7 @@ sub anyevent_watcher {
 
 sub close {
     my $self = shift;
-    warn "$$ CLOSE SOCKET";
+    # warn "$$ CLOSE SOCKET";
     $self->socket->close();
 
 }
