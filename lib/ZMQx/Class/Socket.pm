@@ -184,9 +184,18 @@ sub send {
     
     }
 
-    return ( $#{$parts} == 0 ) ?
-        $self->socket->send($parts->[0], $flags)
-        : $self->socket->send_multipart($parts, $flags);
+
+    # ZMQ::FFI doesn't return anything useful from send(), so we need to fake
+    # things to preserve our documented return value.
+    # If ZMQ::FFI doesn't want to change send to return the value, then
+    # probably we should simply deprecate returning the length, and return
+    # a value that is truthful.
+    if ( $#{$parts} == 0 ) {
+        $self->socket->send($parts->[0], $flags);
+    } else {
+        $self->socket->send_multipart($parts, $flags);
+    }
+    return length $parts->[$#{$parts}];
 }
 
 sub receive_multipart {
