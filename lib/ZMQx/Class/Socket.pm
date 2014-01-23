@@ -198,6 +198,37 @@ sub send {
     return $length;
 }
 
+=method send_bytes
+
+    $socket->send_bytes( \@message );
+    $socket->send_bytes( \@message, ZMQ_DONTWAIT );
+    $socket->send_bytes( $message );
+
+C<send_bytes> sends raw bytes over the socket. The message can be a plain
+scalar or an array of scalars. All must hold bytes - ie code points between
+0 and 255. If you want strings you should either encode from Unicode yourself
+first, or use send() instead. You probably need to use C<send_bytes> if you
+are sending multi-part messages with ZMQ routing information.
+
+=cut
+
+sub send_bytes {
+    my ( $self, $parts, $flags ) = @_;
+    my $length = 0;
+
+    if ( !ref($parts) ) {
+        $parts = [$parts];
+    }
+
+    foreach (0 .. $#{$parts} ) {
+        croak("send_bytes() message (part $_) is not bytes")
+            unless utf8::downgrade( $parts->[$_], 1 );
+        $length += length $parts->[$_];
+    }
+    $self->socket->send_multipart($parts, $flags);
+    return $length;
+}
+
 sub receive_multipart {
     my $rv = receive(@_);
     carp 'DEPRECATED! Use $socket->receive() instead';
