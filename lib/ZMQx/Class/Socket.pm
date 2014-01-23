@@ -170,32 +170,57 @@ exception on error.
 
 =cut
 
-sub send {
-    my ( $self, $parts, $flags ) = @_;
+# receive deals in strings, receive_bytes deals with bytes.
+# therefore send deals with strings.
+# TODO - can't we send in encodings other than UTF-8
 
-    $flags //= 0;
-
-    if ( !ref($parts) ) {
-        $parts = [$parts];
-    }
+sub _send_string_utf8 {
+    my ($self, undef, $flags) = @_;
+    # Explicitly avoiding copying the string we send, and these "conversions"
+    # are in place and a NO-OP on a string that is already internally UTF-8.
 
     # ZMQ::FFI doesn't return anything useful from send(), so we need to fake
     # things to preserve our documented return value.
     # If ZMQ::FFI doesn't want to change send to return the value, then
     # probably we should simply deprecate returning the length, and return
     # a value that is truthful.
-    my $length;
-    foreach (0 .. $#{$parts} ) {
-        $length += utf8::upgrade( $parts->[$_] );
-    }
 
-
-    if ( $#{$parts} == 0 ) {
-        $self->socket->send($parts->[0], $flags);
-    } else {
-        $self->socket->send_multipart($parts, $flags);
+    my $length = utf8::upgrade($_[1]);
+    unless (eval {
+        # Convert to the UTF-8 representation of the Unicode characters.
+        # It's actually just flipping a flag bit.
+        utf8::encode($_[1]);
+        $self->socket->send($_[1], $flags);
+        # Flip it back:
+        utf8::decode($_[1]);
+        1;
+    }) {
+        # Propagate the error from send.
+        die;
     }
     return $length;
+}
+
+sub send {
+    my ( $self, $parts, $flags ) = @_;
+    my $length = 0;
+
+    # ZMQ::FFI chooses to deal in bytes only:
+    # https://github.com/calid/zmq-ffi/pull/5
+    # so as we are talking strings we need to deal with the encoding ourselves.
+    # As we have steps to do both before and after the call to the ZMQ send,
+    # we would need *two* loops locally if we called send_multipart. So it's
+    # actually less work for us to deal with all the looping ourselves.
+    if (ref $parts) {
+        $flags //= 0;
+        foreach (0 .. $#{$parts} - 1 ) {
+            $length += $self->_send_string_utf8($parts->[$_], $flags | ZMQ_SNDMORE);
+        }
+        $parts = $parts->[$#{$parts}];
+        # Fall through to the simple case.
+    }
+
+    return $length + $self->_send_string_utf8($parts, $flags);
 }
 
 =method send_bytes
