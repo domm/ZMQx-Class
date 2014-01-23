@@ -165,9 +165,8 @@ C<send> will automatically set C<ZMQ_SENDMORE> for multipart messages.
 
 You can pass flags to C<send>. Currently the only flag is C<ZMQ_DONTWAIT>.
 
-C<send> returns the number of bytes send in the last message (TODO this should
-be changes to the total number of bytes for the whole multipart message), or
--1 on error.
+C<send> returns the number of bytes sent in the message, and throws an
+exception on error.
 
 =cut
 
@@ -179,14 +178,24 @@ sub send {
     if ( !ref($parts) ) {
         $parts = [$parts];
     }
+
+    # ZMQ::FFI doesn't return anything useful from send(), so we need to fake
+    # things to preserve our documented return value.
+    # If ZMQ::FFI doesn't want to change send to return the value, then
+    # probably we should simply deprecate returning the length, and return
+    # a value that is truthful.
+    my $length;
     foreach (0 .. $#{$parts} ) {
-        utf8::upgrade( $parts->[$_] );
-    
+        $length += utf8::upgrade( $parts->[$_] );
     }
 
-    return ( $#{$parts} == 0 ) ?
-        $self->socket->send($parts->[0], $flags)
-        : $self->socket->send_multipart($parts, $flags);
+
+    if ( $#{$parts} == 0 ) {
+        $self->socket->send($parts->[0], $flags);
+    } else {
+        $self->socket->send_multipart($parts, $flags);
+    }
+    return $length;
 }
 
 sub receive_multipart {
