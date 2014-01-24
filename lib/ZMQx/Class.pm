@@ -5,13 +5,24 @@ use 5.010;
 use ZMQx::Class::Socket;
 use Carp qw(croak carp);
 
-our $VERSION = "0.005";
+our $VERSION = "0.006";
 # ABSTRACT: OO Interface to ZMQ
 my $__CONTEXT = {};
 
-use ZMQ::LibZMQ3 qw(zmq_socket zmq_init);
-use ZMQ::Constants
-    qw(ZMQ_REQ ZMQ_REP ZMQ_DEALER ZMQ_ROUTER ZMQ_PULL ZMQ_PUSH ZMQ_PUB ZMQ_SUB  ZMQ_XPUB ZMQ_XSUB ZMQ_PAIR);
+use ZMQ::FFI;
+use ZMQ::Constants qw(
+    ZMQ_DEALER
+    ZMQ_PAIR
+    ZMQ_PUB
+    ZMQ_PULL
+    ZMQ_PUSH
+    ZMQ_REP
+    ZMQ_REQ
+    ZMQ_ROUTER
+    ZMQ_SUB
+    ZMQ_XPUB
+    ZMQ_XSUB
+);
 
 my %types = (
     'REQ'    => ZMQ_REQ,
@@ -29,7 +40,7 @@ my %types = (
 
 sub _new_context {
     my $class = shift;
-    return zmq_init();
+    return ZMQ::FFI->new( @_ );
 }
 
 =method context
@@ -94,7 +105,7 @@ sub socket {
     my $class           = shift;
     my $context_or_type = shift;
     my ( $context, $type );
-    if ( ref($context_or_type) eq 'ZMQ::LibZMQ3::Context' ) {
+    if ( ref($context_or_type) =~ /^ZMQ::FFI::ZMQ\d::Context/ ) {
         $context = $context_or_type;
         $type    = shift;
     }
@@ -104,9 +115,9 @@ sub socket {
     }
     my ( $connect, $address, $opts ) = @_;
     croak "no such socket type: $type" unless defined $types{$type};
-
+    
     my $socket = ZMQx::Class::Socket->new(
-        _socket => zmq_socket( $context, $types{$type} ),
+        _socket => $context->socket( $types{$type} ),
         type    => $type,
         _pid    => $$,
         _init_opts_for_cloning => [ $class, $type, @_ ],
