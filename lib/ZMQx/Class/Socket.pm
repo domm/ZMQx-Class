@@ -425,8 +425,9 @@ sub get_fd {
         ZMQ_RECONNECT_IVL_MAX
         ZMQ_RECOVERY_IVL
         ZMQ_SNDBUF
-        ZMQ_SNDHWM 
+        ZMQ_SNDHWM
         ZMQ_SNDTIMEO
+        ZMQ_TYPE
     );
 
     my @sockopts_after_connect = qw(
