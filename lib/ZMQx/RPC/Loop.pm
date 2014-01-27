@@ -18,7 +18,7 @@ sub loop {
     my $running = AnyEvent->condvar;
     my $w;
     my $has_envelope = 0;#
-    #warn $server->socket->get_type;
+    warn $server->get_type;
     $w = $server->anyevent_watcher(
         sub {
             $running->send unless $self->_server_is_running;
