@@ -41,7 +41,7 @@ sub new_response {
 
     return ZMQx::RPC::Message::Response->new(
         status=>200,
-        request=>$self,
+        header=>$self->header, # TODO extract fields relevant for response
         payload=>$payload,
     );
 }

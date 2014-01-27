@@ -40,29 +40,17 @@ sub pack {
     return $wire_payload;
 }
 
-
-
-sub error {
-    my ($class, $status, $message ) = @_;
-    # TODO do we need to handle message-objects?
-    # message has to be utf-8 string
-    utf8::encode(''.$message);
-    return [$status,$message];
-}
-
 sub unpack {
     my ($class, $msg, $req_head) = @_;
 
     my $status = shift(@$msg);
     my $header = shift(@$msg);
-    return ZMQx::RPC::Message::Response->new(
+    my $res = ZMQx::RPC::Message::Response->new(
         status=>$status,
         header => ZMQx::RPC::Header->unpack($header),
-        payload=>$msg
     );
-
-    # TODO use req_header to decode message payload
-
+    $res->_decode_payload($msg);
+    return $res;
 }
 
 1;
