@@ -4,27 +4,22 @@ use strict;
 use warnings;
 use Carp qw(croak);
 extends 'ZMQx::RPC::Message';
+use ZMQx::RPC::Header;
 
 has 'command' => (is=>'ro',isa=>'Str',required=>1);
-has 'timeout' => (is=>'ro',isa=>'Int',default=>500);
+has '+header' => (default=>sub {
+    return ZMQx::RPC::Header->new(
+        type=>'string',
+        timeout=>500.
+    );
+});
 
-our @header_positions = qw( type timeout );
 
 sub pack {
     my ($self, @payload ) = @_;
 
-    my @head;
-    foreach my $fld (@header_positions) {
-        if (my $v = $self->$fld) {
-            push(@head, $v);
-        }
-        else {
-            push(@head, '')
-        }
-    }
-
     my $wire_payload = $self->_encode_payload(\@payload);
-    unshift(@$wire_payload, $self->command,join(';',@head));
+    unshift(@$wire_payload, $self->command,$self->header->pack);
     return $wire_payload;
 }
 
@@ -34,13 +29,9 @@ sub unpack {
     my ($cmd,$header,@payload) = @$msg;
     my %new = (
         command=>$cmd,
+        header => ZMQx::RPC::Header->unpack($header),
         payload=>\@payload, # TODO apply header encoding to payload
-    )
-    my @header = split(/;/,$header);
-    while (my ($index, $val) = each (@header_positions)) {
-        next unless defined $header[$index];
-        $new{$val} = $header[$index];
-    }
+    );
 
     return $class->new(\%new);
 }
@@ -51,7 +42,6 @@ sub new_response {
     return ZMQx::RPC::Message::Response->new(
         status=>200,
         request=>$self,
-        type=>$self->type,
         payload=>$payload,
     );
 }

@@ -7,6 +7,11 @@ extends 'ZMQx::RPC::Message';
 
 has 'status' => (is=>'ro',isa=>'Int'); # TODO enum
 has 'request' => (is=>'ro',isa=>'ZMQx::RPC::Message::Request');
+has '+header' => (default=>sub {
+    return ZMQx::RPC::Header->new(
+        type=>'string',
+    );
+});
 
 sub new_error {
     my ($class, $status, $error, $request) = @_;
@@ -30,8 +35,8 @@ sub add_envelope {
 sub pack {
     my $self = shift;
 
-    my $wire_payload = $class->_encode_payload(\@payload);
-    unshift(@$wire_payload, $self->status);
+    my $wire_payload = $self->_encode_payload($self->payload);
+    unshift(@$wire_payload, $self->status, $self->header->pack);
     return $wire_payload;
 }
 
@@ -49,8 +54,10 @@ sub unpack {
     my ($class, $msg, $req_head) = @_;
 
     my $status = shift(@$msg);
+    my $header = shift(@$msg);
     return ZMQx::RPC::Message::Response->new(
         status=>$status,
+        header => ZMQx::RPC::Header->unpack($header),
         payload=>$msg
     );
 

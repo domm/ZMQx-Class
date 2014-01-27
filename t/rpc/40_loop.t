@@ -51,10 +51,11 @@ subtest 'req-rep loop' => sub {
         after=>0.4,
         cb=>sub {
             my $res = $client->receive_bytes(1);
-            my ($status,@payload )= ZMQx::RPC::Message::Response->unpack($res);
-            is($status,200,'status: 200');
-            is($payload[0],'HELLO WORLD','payload uppercase');
-            is($payload[1],'hello world','payload lowercase');
+            my $res = ZMQx::RPC::Message::Response->unpack($res);
+            is($res->status,200,'status: 200');
+            is($res->header->type,'string','header->type');
+            is($res->payload->[0],'HELLO WORLD','payload uppercase');
+            is($res->payload->[1],'hello world','payload lowercase');
 
             $rpc->_server_is_running(0);
         }

@@ -4,10 +4,13 @@ use warnings;
 use Moose;
 use Carp qw(croak);
 
+has 'header' => (is=>'ro',isa=>'ZMQx::RPC::Header');
+has 'payload' => (is=>'rw',isa=>'ArrayRef',default=>sub {[]});
+
+
 has 'serializable_types' => (is=>'ro',default=>sub {{
     'JSON'=>\&JSON::XS::encode_json,
 }});
-has 'payload' => (is=>'rw',isa=>'ArrayRef',default=>sub {[]});
 
 # TODO specify header position via trait
 has 'type' => (is=>'ro',isa=>'Str',default=>'string'); # TODO enum? serializable_types?
