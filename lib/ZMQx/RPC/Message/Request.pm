@@ -1,35 +1,30 @@
 package ZMQx::RPC::Message::Request;
+use Moose;
 use strict;
 use warnings;
 use Carp qw(croak);
-use parent qw(ZMQx::RPC::Message);
+extends 'ZMQx::RPC::Message';
 
-my @header_positions = qw( type timeout );
+has 'command' => (is=>'ro',isa=>'Str',required=>1);
+has 'timeout' => (is=>'ro',isa=>'Int',default=>500);
+
+our @header_positions = qw( type timeout );
 
 sub pack {
-    my ($class, $command, $header, @payload ) = @_;
-
-    # we could do my $msg = $class->new($command, $header, @payload);
-    # and then $msg->pack
-    # but for now we just do the pack right away
-
-    my $type = $header->{type} ||= 'string';
-    $header->{timeout} ||= '500';
+    my ($self, @payload ) = @_;
 
     my @head;
     foreach my $fld (@header_positions) {
-        if (my $v = $header->{$fld}) {
+        if (my $v = $self->$fld) {
             push(@head, $v);
-           # delete $header->{$fld});
         }
         else {
             push(@head, '')
         }
     }
-    # TODO warn if there is still something left in header
 
-    my $wire_payload = $class->_encode_payload($type, \@payload);
-    unshift(@$wire_payload, $command,join(';',@head));
+    my $wire_payload = $self->_encode_payload(\@payload);
+    unshift(@$wire_payload, $self->command,join(';',@head));
     return $wire_payload;
 }
 
@@ -37,16 +32,38 @@ sub unpack {
     my ($class, $msg) = @_;
 
     my ($cmd,$header,@payload) = @$msg;
+    my %new = (
+        command=>$cmd,
+        payload=>\@payload, # TODO apply header encoding to payload
+    )
     my @header = split(/;/,$header);
-    my %header;
     while (my ($index, $val) = each (@header_positions)) {
         next unless defined $header[$index];
-        $header{$val} = $header[$index];
+        $new{$val} = $header[$index];
     }
-    # TODO apply header encoding to payload
 
-    return ($cmd,\%header,\@payload);
+    return $class->new(\%new);
 }
+
+sub new_response {
+    my ($self, $payload ) = @_;
+
+    return ZMQx::RPC::Message::Response->new(
+        status=>200,
+        request=>$self,
+        type=>$self->type,
+        payload=>$payload,
+    );
+}
+
+sub new_error_response {
+    my ($self, $status, $error) = @_;
+
+    return ZMQx::RPC::Message::Response->new_error(
+       $status, $error, $self
+    );
+}
+
 
 =pod
 

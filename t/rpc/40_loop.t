@@ -12,7 +12,7 @@ use ZMQ::Constants qw(ZMQ_DONTWAIT);
 
 package TestLoop;
 use Moose;
-with 'ZMQx::RPC::Loop';
+with 'ZMQx::RPC::Loop'; # TODO: define allowed methods
 sub echo {
     my ($self, @payload ) = @_;
     return map { uc($_),lc($_) } @payload;
@@ -43,8 +43,8 @@ subtest 'req-rep loop' => sub {
     my $send = AnyEvent->timer(
         after=>0.2,
         cb=>sub {
-            my $msg = ZMQx::RPC::Message::Request->pack('echo',{},'hello world');
-            $client->send_bytes($msg);
+            my $msg = ZMQx::RPC::Message::Request->new(command=>'echo');
+            $client->send_bytes($msg->pack('hello world'));
         }
     );
     my $receive = AnyEvent->timer(
@@ -64,5 +64,9 @@ subtest 'req-rep loop' => sub {
 };
 
 done_testing();
+
+
+
+
 
 

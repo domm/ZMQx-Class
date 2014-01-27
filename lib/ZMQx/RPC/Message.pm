@@ -1,14 +1,22 @@
 package ZMQx::RPC::Message;
 use strict;
 use warnings;
+use Moose;
 use Carp qw(croak);
 
-my %serializable_types = (
+has 'serializable_types' => (is=>'ro',default=>sub {{
     'JSON'=>\&JSON::XS::encode_json,
-);
+}});
+has 'payload' => (is=>'rw',isa=>'ArrayRef',default=>sub {[]});
+
+# TODO specify header position via trait
+has 'type' => (is=>'ro',isa=>'Str',default=>'string'); # TODO enum? serializable_types?
+
+
 
 sub _encode_payload {
-    my ($class, $type, $payload ) = @_;
+    my ($self, $payload ) = @_;
+    my $type = $self->type;
     my @wire_payload;
     if ($type eq 'string' || $type eq 'raw') {
         while (my ($index, $val) = each (@$payload)) {
@@ -25,7 +33,7 @@ sub _encode_payload {
             }
         }
     }
-    elsif (my $serializer = $serializable_types{$type}) {
+    elsif (my $serializer = $self->serializable_types->{$type}) {
         @wire_payload = map {
             ref($_) ? $serializer->($_) : $_
         } @$payload;

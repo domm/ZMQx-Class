@@ -23,7 +23,7 @@ sub loop {
         sub {
             $running->send unless $self->_server_is_running;
 
-            return unless $server->socket->has_pollin;
+            return unless $server->socket->has_pollin; # Check if this works with a big message / high load
             $log->debugf("i have a poll_in");
 
             # We have to deal in bytes and do the encoding/decoding ourselves
@@ -33,27 +33,26 @@ sub loop {
 
                 my $res;
                 eval {
-                    my ($cmd, $header, $payload) = ZMQx::RPC::Message::Request->unpack($msg);
+                    my $req = ZMQx::RPC::Message::Request->unpack($msg);
                     # TODO: handle timeouts using alarm() because AnyEvent won't be interrupted in $cmd
+                    my $cmd = $req->command;
                     if ($self->can($cmd)) { # move to hash when implement parametric role
-                        my @cmd_res = $self->$cmd(@$payload);
+                        my @cmd_res = $self->$cmd(@{$req->payload});
 
-                        $res = ZMQx::RPC::Message::Response->pack($header,@cmd_res);
+                        $res = $req->new_response(\@cmd_res);
                     }
                     else {
-                        $res = ZMQx::RPC::Message::Response->error(400,"no such command $cmd");
+                        $res = $req->new_error_response(400,"no such command $cmd in package ".ref($self));
                     }
 
                 };
                 if ($@) {
-                    $res = ZMQx::RPC::Message::Response->error(500,$@);
+                    $res = ZMQx::RPC::Message::Response->new_error(500,$@);
                 }
 
-                if ($has_envelope) {
-                    unshift(@$res,@$envelope);
-                }
-                $server->send_bytes( $res ); # TODO handle 0mq network errors?
+                $res->add_envelope($envelope) if $has_envelope;
 
+                $server->send_bytes( $res->pack ); # TODO handle 0mq network errors?
             }
         }
     );

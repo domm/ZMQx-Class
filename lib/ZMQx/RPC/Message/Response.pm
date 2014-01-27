@@ -1,17 +1,41 @@
 package ZMQx::RPC::Message::Response;
+use Moose;
 use strict;
 use warnings;
 use Carp qw(croak);
-use parent qw(ZMQx::RPC::Message);
+extends 'ZMQx::RPC::Message';
+
+has 'status' => (is=>'ro',isa=>'Int'); # TODO enum
+has 'request' => (is=>'ro',isa=>'ZMQx::RPC::Message::Request');
+
+sub new_error {
+    my ($class, $status, $error, $request) = @_;
+
+    # check if $error is an object and do something..
+    my %new = (
+        status=>$status,
+        payload=>[ ''.$error ],
+        type=>'string',
+    );
+    $new{request} = $request if $request;
+    return $class->new( %new );
+}
+
+sub add_envelope {
+    my ($self, $envelope) = @_;
+    unshift(@{$self->payload},@$envelope);
+    return;
+}
 
 sub pack {
-    my ($class, $header, @payload ) = @_;
+    my $self = shift;
 
-    my $type = $header->{type} || 'string';
-    my $wire_payload = $class->_encode_payload($type, \@payload);
-    unshift(@$wire_payload, 200);
+    my $wire_payload = $class->_encode_payload(\@payload);
+    unshift(@$wire_payload, $self->status);
     return $wire_payload;
 }
+
+
 
 sub error {
     my ($class, $status, $message ) = @_;
@@ -24,8 +48,13 @@ sub error {
 sub unpack {
     my ($class, $msg, $req_head) = @_;
 
+    my $status = shift(@$msg);
+    return ZMQx::RPC::Message::Response->new(
+        status=>$status,
+        payload=>$msg
+    );
+
     # TODO use req_header to decode message payload
-    return @$msg;
 
 }
 
