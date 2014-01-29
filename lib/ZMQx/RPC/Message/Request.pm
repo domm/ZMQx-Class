@@ -28,13 +28,13 @@ sub unpack {
     my ($class, $msg) = @_;
 
     my ($cmd,$header,@payload) = @$msg;
-    my %new = (
+
+    my $req = $class->new(
         command=>$cmd,
         header => ZMQx::RPC::Header->unpack($header),
-        payload=>\@payload, # TODO apply header encoding to payload
     );
-
-    return $class->new(\%new);
+    $req->payload($req->_decode_payload(\@payload));
+    return $req;
 }
 
 sub new_response {
