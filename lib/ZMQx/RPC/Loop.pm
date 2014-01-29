@@ -69,7 +69,7 @@ role {
                         if ( $DISPATCH{$cmd} ) {
                             $log->debugf("Dispatching $cmd");
                             my @cmd_res = $self->$cmd( @{ $req->payload } );
-                            if (@cmd_res >= 1 || !blessed($cmd_res[0])) {
+                            if (@cmd_res >= 1 || !blessed($cmd_res[0])) { # TODO this approach does not allow to return one object (Foo::Bar), so maybe we should check ISA
                                 return $req->new_response( \@cmd_res );
                             }
                             else {
