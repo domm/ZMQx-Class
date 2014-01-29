@@ -5,6 +5,7 @@ use warnings;
 use Carp qw(croak);
 extends 'ZMQx::RPC::Message';
 use ZMQx::RPC::Header;
+use ZMQx::RPC::Message::Response;
 
 has 'command' => (is=>'ro',isa=>'Str',required=>1);
 has '+header' => (default=>sub {
@@ -53,7 +54,6 @@ sub new_error_response {
        $status, $error, $self
     );
 }
-
 
 =pod
 

@@ -66,11 +66,15 @@ role {
                         # TODO: handle timeouts using alarm() because AnyEvent won't be interrupted in $cmd
                         my $cmd = $req->command;
 
-                        #if ($self->dispatch->{$cdm})
                         if ( $DISPATCH{$cmd} ) {
                             $log->debugf("Dispatching $cmd");
                             my @cmd_res = $self->$cmd( @{ $req->payload } );
-                            return $req->new_response( \@cmd_res );
+                            if (@cmd_res >= 1 || !blessed($cmd_res[0])) {
+                                return $req->new_response( \@cmd_res );
+                            }
+                            else {
+                                return $cmd_res[0];
+                            }
                         }
                         elsif ( $DISPATCH_RAW{$cmd} ) {
                             $log->debugf("Raw dispatching $cmd");
@@ -93,6 +97,7 @@ role {
                     unshift (@$raw, @$envelope) if $has_envelope;
                     $server->send_bytes( $raw )
                         ;    # TODO handle 0mq network errors?
+                    # TODO run after
                 }
             }
         );
