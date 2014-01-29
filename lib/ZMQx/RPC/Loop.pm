@@ -5,8 +5,10 @@ use Carp qw(croak);
 use MooseX::Role::Parameterized;
 use AnyEvent;
 use Log::Any qw($log);
+use ZMQx::RPC::Message::Request;
+use ZMQx::RPC::Message::Response;
 
-parameter 'commands' => ( is => 'ro', isa => 'ArrayRef', required => 0 );
+parameter 'commands' => ( is => 'ro', isa => 'ArrayRef', required => 1 );
 
 my %DISPATCH;
 my %DISPATCH_RAW;
