@@ -124,8 +124,6 @@ my $receive3 = AnyEvent->timer(
 );
 
 
-
-
 $rpc->loop($server);
 
 done_testing();
