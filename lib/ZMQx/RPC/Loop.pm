@@ -42,9 +42,9 @@ role {
         my ( $self, $server ) = @_;
 
         my $running = AnyEvent->condvar;
-        my $w;
-        my $has_envelope = 0;    # $server->get_type;
-        $w = $server->anyevent_watcher(
+        # FIXME - deal with DEALERs, and anything else fun.
+        my $has_envelope = $server->type eq 'ROUTER';
+        my $w = $server->anyevent_watcher(
             sub {
                 $running->send unless $self->_server_is_running;
 
@@ -56,37 +56,42 @@ role {
                 # We have to deal in bytes and do the encoding/decoding ourselves
                 # as the envelope section is bytes, not UTF-8-encoded characters.
                 while ( my $msg = $server->receive_bytes ) {
-                    my $envelope = $self->unpack_envelope($msg)
-                        if $has_envelope;
+                    $log->debugf("i have a msg");
+                    my $envelope = $has_envelope && $self->unpack_envelope($msg);
 
                     my $res = eval {
                         my $req = ZMQx::RPC::Message::Request->unpack($msg);
+                        $log->debugf("i have a req");
 
                         # TODO: handle timeouts using alarm() because AnyEvent won't be interrupted in $cmd
                         my $cmd = $req->command;
 
                         #if ($self->dispatch->{$cdm})
                         if ( $DISPATCH{$cmd} ) {
+                            $log->debugf("Dispatching $cmd");
                             my @cmd_res = $self->$cmd( @{ $req->payload } );
                             return $req->new_response( \@cmd_res );
                         }
                         elsif ( $DISPATCH_RAW{$cmd} ) {
+                            $log->debugf("Raw dispatching $cmd");
                             return $self->$cmd($req);
                         }
                         else {
-                            return $req->new_error_response( 400,
-                                "no such command $cmd in package "
-                                    . ref($self) );
+                            my $error = "no such command $cmd in package "
+                                . ref($self);
+                            $log->info($error);
+                            return $req->new_error_response( 400, $error );
                         }
                     };
                     if ($@) {
+                        $log->warn($@);
                         $res = ZMQx::RPC::Message::Response->new_error( 500,
                             $@ );
                     }
 
-                    $res->add_envelope($envelope) if $has_envelope;
-
-                    $server->send_bytes( $res->pack )
+                    my $raw = $res->pack;
+                    unshift (@$raw, @$envelope) if $has_envelope;
+                    $server->send_bytes( $raw )
                         ;    # TODO handle 0mq network errors?
                 }
             }

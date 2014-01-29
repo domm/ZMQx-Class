@@ -26,12 +26,6 @@ sub new_error {
     return $class->new( %new );
 }
 
-sub add_envelope {
-    my ($self, $envelope) = @_;
-    unshift(@{$self->payload},@$envelope);
-    return;
-}
-
 sub pack {
     my $self = shift;
 
