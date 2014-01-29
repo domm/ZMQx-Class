@@ -34,7 +34,8 @@ subtest 'custom header' => sub {
     my $unpacked = ZMQx::RPC::Message::Request->unpack($packed);
     is($unpacked->command,'cmd','unpack: command');
     is($unpacked->header->timeout,42,'unpack: header.timeout');
-    is($unpacked->payload->[1],'world','unpack: payload is a data structure');
+    my ($payload) = @{ $unpacked->payload };
+    is($payload->[1],'world','unpack: payload is a data structure');
     explain $unpacked->payload;
 };
 
