@@ -20,16 +20,9 @@ sub new_error {
     my %new = (
         status=>$status,
         payload=>[ ''.$error ],
-        type=>'string',
     );
     $new{request} = $request if $request;
     return $class->new( %new );
-}
-
-sub add_envelope {
-    my ($self, $envelope) = @_;
-    unshift(@{$self->payload},@$envelope);
-    return;
 }
 
 sub pack {
@@ -41,7 +34,7 @@ sub pack {
 }
 
 sub unpack {
-    my ($class, $msg, $req_head) = @_;
+    my ($class, $msg) = @_;
 
     my $status = shift(@$msg);
     my $header = shift(@$msg);
