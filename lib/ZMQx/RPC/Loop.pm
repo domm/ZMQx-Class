@@ -69,12 +69,16 @@ role {
                         if ( $DISPATCH{$cmd} ) {
                             $log->debugf("Dispatching $cmd");
                             my @cmd_res = $self->$cmd( @{ $req->payload } );
-                            if (@cmd_res >= 1 || !blessed($cmd_res[0])) { # TODO this approach does not allow to return one object (Foo::Bar), so maybe we should check ISA
-                                return $req->new_response( \@cmd_res );
-                            }
-                            else {
+                            if (@cmd_res == 1 && blessed($cmd_res[0])
+                                && $cmd_res[0]->DOES('ZMQx::RPC::Message::Response')) {
+                                # If you return exactly one item which is a
+                                # ZMQx::RPC::Message::Response then it is
+                                # assumed that you are aware that you are
+                                # running inside this server loop and know
+                                # exactly what response you wish to generate:
                                 return $cmd_res[0];
                             }
+                            return $req->new_response( \@cmd_res );
                         }
                         elsif ( $DISPATCH_RAW{$cmd} ) {
                             $log->debugf("Raw dispatching $cmd");

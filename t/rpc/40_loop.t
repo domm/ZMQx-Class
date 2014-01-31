@@ -18,6 +18,7 @@ with 'ZMQx::RPC::Loop' => {
         'echo',
         'echo_ref',
         'something_raw' => { payload => 'raw' } ,
+        'post',
     ]
 };
 
@@ -47,6 +48,16 @@ sub echo_ref {
     return @new;
 }
 
+sub post {
+    my ($self, @payload ) = @_;
+    # TODO - Use NFD to decompose the message into letters and accents, and
+    # hence ROT13 letters with diacriticals.
+    my $res = ZMQx::RPC::Message::Response->new(
+        status=>200,
+        payload=>[map {tr/A-Za-z/N-ZA-Mn-za-m/r} @payload]
+    );
+    return $res;
+}
 
 package main;
 
@@ -130,6 +141,28 @@ my $receive3 = AnyEvent->timer(
         is($res->header->type,'string','header->type');
         is($res->payload->[0],'a raw something_raw','payload raw');
        # is($res->payload->[1],'stringifyed json','payload JSON lowercase');
+
+    }
+);
+
+my $send4 = AnyEvent->timer(
+    after=>1.4,
+    cb=>sub {
+        my $msg = ZMQx::RPC::Message::Request->new(
+            command=>'post',
+        );
+        $client->send_bytes($msg->pack('Hello', 'World'));
+    }
+);
+my $receive4 = AnyEvent->timer(
+    after=>1.6,
+    cb=>sub {
+        my $raw = $client->receive_bytes(1);
+        my $res = ZMQx::RPC::Message::Response->unpack($raw);
+        is($res->status,200,'status: 200');
+        is($res->header->type,'string','header->type');
+        is($res->payload->[0],'Uryyb','Hello');
+        is($res->payload->[1],'Jbeyq','world');
 
         $rpc->_server_is_running(0);
     }
