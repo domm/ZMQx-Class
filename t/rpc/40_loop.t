@@ -21,6 +21,7 @@ with 'ZMQx::RPC::Loop' => {
         'post',
     ]
 };
+use Test::More;
 
 sub something_raw {
     my ($self, $req ) = @_;
@@ -48,14 +49,26 @@ sub echo_ref {
     return @new;
 }
 
+my $post = AnyEvent->condvar;
+
 sub post {
     my ($self, @payload ) = @_;
-    # TODO - Use NFD to decompose the message into letters and accents, and
-    # hence ROT13 letters with diacriticals.
+    state $s = 0;
     my $res = ZMQx::RPC::Message::Response->new(
-        status=>200,
-        payload=>[map {tr/A-Za-z/N-ZA-Mn-za-m/r} @payload]
+        status=>200
     );
+    if (@payload) {
+        $res->post_send(sub {
+            my ($req, $res) = @_;
+            isa_ok($req, 'ZMQx::RPC::Message::Request', 'callback first arg');
+            isa_ok($res, 'ZMQx::RPC::Message::Response', 'callback second arg');
+            $s = $payload[0];
+            $post->send('Hello from the callback', $payload[1]);
+        });
+    }
+    $res->payload([$s]);
+    ++$s;
+
     return $res;
 }
 
@@ -151,7 +164,7 @@ my $send4 = AnyEvent->timer(
         my $msg = ZMQx::RPC::Message::Request->new(
             command=>'post',
         );
-        $client->send_bytes($msg->pack('Hello', 'World'));
+        $client->send_bytes($msg->pack());
     }
 );
 my $receive4 = AnyEvent->timer(
@@ -161,8 +174,56 @@ my $receive4 = AnyEvent->timer(
         my $res = ZMQx::RPC::Message::Response->unpack($raw);
         is($res->status,200,'status: 200');
         is($res->header->type,'string','header->type');
-        is($res->payload->[0],'Uryyb','Hello');
-        is($res->payload->[1],'Jbeyq','world');
+        is($res->payload->[0], 0, 'Got 0');
+        ok(!$post->ready(), 'Callback not called yet');
+    }
+);
+
+my $send5 = AnyEvent->timer(
+    after=>1.8,
+    cb=>sub {
+        my $msg = ZMQx::RPC::Message::Request->new(
+            command=>'post',
+        );
+        ok(!$post->ready(), 'Callback not called yet');
+        $client->send_bytes($msg->pack('Hello', 'World'));
+        # At some point after here the callback is called.
+    }
+);
+my $receive5 = AnyEvent->timer(
+    after=>2.0,
+    cb=>sub {
+        my $raw = $client->receive_bytes(1);
+        my $res = ZMQx::RPC::Message::Response->unpack($raw);
+        is($res->status,200,'status: 200');
+        is($res->header->type,'string','header->type');
+        is($res->payload->[0], 1, 'Got 1');
+    }
+);
+
+my $send6 = AnyEvent->timer(
+    after=>2.2,
+    cb=>sub {
+        my $msg = ZMQx::RPC::Message::Request->new(
+            command=>'post',
+        );
+        ok($post->ready(), 'Callback has been called');
+        my @got = $post->recv();
+        is_deeply(\@got,
+                  ['Hello from the callback',
+                   'World',
+                  ], 'Callback results');
+        $client->send_bytes($msg->pack());
+    }
+);
+my $receive6 = AnyEvent->timer(
+    after=>2.4,
+    cb=>sub {
+        my $raw = $client->receive_bytes(1);
+        my $res = ZMQx::RPC::Message::Response->unpack($raw);
+        is($res->status,200,'status: 200');
+        is($res->header->type,'string','header->type');
+        is($res->payload->[0], 'Hello', 'Got Hello');
 
         $rpc->_server_is_running(0);
     }
@@ -172,9 +233,3 @@ my $receive4 = AnyEvent->timer(
 $rpc->loop($server);
 
 done_testing();
-
-
-
-
-
-

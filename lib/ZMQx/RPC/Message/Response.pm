@@ -12,6 +12,7 @@ has '+header' => (default=>sub {
         type=>'string',
     );
 });
+has 'post_send' => (is=>'rw',isa=>'CodeRef');
 
 sub new_error {
     my ($class, $status, $error, $request) = @_;

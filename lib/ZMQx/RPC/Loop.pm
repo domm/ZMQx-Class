@@ -58,9 +58,9 @@ role {
                 while ( my $msg = $server->receive_bytes ) {
                     $log->debugf("i have a msg");
                     my $envelope = $has_envelope && $self->unpack_envelope($msg);
-
+                    my $req;
                     my $res = eval {
-                        my $req = ZMQx::RPC::Message::Request->unpack($msg);
+                        $req = ZMQx::RPC::Message::Request->unpack($msg);
                         $log->debugf("i have a req");
 
                         # TODO: handle timeouts using alarm() because AnyEvent won't be interrupted in $cmd
@@ -101,7 +101,20 @@ role {
                     unshift (@$raw, @$envelope) if $has_envelope;
                     $server->send_bytes( $raw )
                         ;    # TODO handle 0mq network errors?
-                    # TODO run after
+                    my $post = $res->post_send;
+                    # TODO - this could probably also be passed the network
+                    # status. Or maybe the response object is taught that.
+                    # Explicitly pass the response, to avoid the callback
+                    # needing to close over it, which likely will cause a
+                    # reference loop and hence a memory leak. (strictly, it's
+                    # freed at global destruction, but servers never exit.)
+                    if ($post) {
+                        my $cmd = $req->command;
+                        # TODO - time this?
+                        $log->debug("Running post_send after $cmd");
+                        $post->($req, $res);
+                        $log->debug("Completed post_send after $cmd");
+                    }
                 }
             }
         );
