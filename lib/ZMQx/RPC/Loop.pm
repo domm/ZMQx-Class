@@ -58,9 +58,9 @@ role {
                 while ( my $msg = $server->receive_bytes ) {
                     $log->debugf("i have a msg");
                     my $envelope = $has_envelope && $self->unpack_envelope($msg);
-
+                    my $req;
                     my $res = eval {
-                        my $req = ZMQx::RPC::Message::Request->unpack($msg);
+                        $req = ZMQx::RPC::Message::Request->unpack($msg);
                         $log->debugf("i have a req");
 
                         # TODO: handle timeouts using alarm() because AnyEvent won't be interrupted in $cmd
@@ -69,12 +69,16 @@ role {
                         if ( $DISPATCH{$cmd} ) {
                             $log->debugf("Dispatching $cmd");
                             my @cmd_res = $self->$cmd( @{ $req->payload } );
-                            if (@cmd_res >= 1 || !blessed($cmd_res[0])) { # TODO this approach does not allow to return one object (Foo::Bar), so maybe we should check ISA
-                                return $req->new_response( \@cmd_res );
-                            }
-                            else {
+                            if (@cmd_res == 1 && blessed($cmd_res[0])
+                                && $cmd_res[0]->DOES('ZMQx::RPC::Message::Response')) {
+                                # If you return exactly one item which is a
+                                # ZMQx::RPC::Message::Response then it is
+                                # assumed that you are aware that you are
+                                # running inside this server loop and know
+                                # exactly what response you wish to generate:
                                 return $cmd_res[0];
                             }
+                            return $req->new_response( \@cmd_res );
                         }
                         elsif ( $DISPATCH_RAW{$cmd} ) {
                             $log->debugf("Raw dispatching $cmd");
@@ -97,7 +101,20 @@ role {
                     unshift (@$raw, @$envelope) if $has_envelope;
                     $server->send_bytes( $raw )
                         ;    # TODO handle 0mq network errors?
-                    # TODO run after
+                    my $post = $res->post_send;
+                    # TODO - this could probably also be passed the network
+                    # status. Or maybe the response object is taught that.
+                    # Explicitly pass the response, to avoid the callback
+                    # needing to close over it, which likely will cause a
+                    # reference loop and hence a memory leak. (strictly, it's
+                    # freed at global destruction, but servers never exit.)
+                    if ($post) {
+                        my $cmd = $req->command;
+                        # TODO - time this?
+                        $log->debug("Running post_send after $cmd");
+                        $post->($req, $res);
+                        $log->debug("Completed post_send after $cmd");
+                    }
                 }
             }
         );
