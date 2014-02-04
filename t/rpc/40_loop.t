@@ -95,132 +95,89 @@ my $stop = AnyEvent->timer(
 
 my @tests =
     (
-     "echo" => sub {
-         my $done = shift;
-         my $msg = ZMQx::RPC::Message::Request->new(command=>'echo');
-         my $c = AnyEvent->io(
-                              fh   => $client->get_fd,
-                              poll => "r",
-                              cb   =>             sub {
-                                  my $raw = $client->receive_bytes(1);
-                                  my $res = ZMQx::RPC::Message::Response->unpack($raw);
-                                  is($res->status,200,'status: 200');
-                                  is($res->header->type,'string','header->type');
-                                  is($res->payload->[0],'HELLO WORLD','payload string uppercase');
-                                  is($res->payload->[1],'hello world','payload string lowercase');
-                                  $done->send();
-                              });
-         $client->send_bytes($msg->pack('hello world'));
-         return $c;
-     },
-     "echo_ref" => sub {
-         my $done = shift;
-         my $msg = ZMQx::RPC::Message::Request->new(
-                                                    command=>'echo_ref',
-                                                    header=>ZMQx::RPC::Header->new(type=>'JSON'),
-                                                   );
-         my $c = AnyEvent->io(
-                              fh   => $client->get_fd,
-                              poll => "r",
-                              cb   =>             sub {
-                                  my $raw = $client->receive_bytes(1);
-                                  my $res = ZMQx::RPC::Message::Response->unpack($raw);
-                                  is($res->status,200,'status: 200');
-                                  is($res->header->type,'JSON','header->type');
-                                  is($res->payload->[0]{foo},'BAR','payload JSON uppercase');
-                                  is($res->payload->[1]{foo},42,'payload JSON uppercase');
-                                  $done->send();
-                              });
-         $client->send_bytes($msg->pack({foo=>'bar'},{foo=>42}));
-         return $c;
-     },
-     "something_raw" => sub {
-         my $done = shift;
-         my $msg = ZMQx::RPC::Message::Request->new(
-                                                    command=>'something_raw',
-                                                    header=>ZMQx::RPC::Header->new(type=>'JSON'),
-                                                   );
-         my $c = AnyEvent->io(
-                              fh   => $client->get_fd,
-                              poll => "r",
-                              cb   =>             sub {
-                                  my $raw = $client->receive_bytes(1);
-                                  my $res = ZMQx::RPC::Message::Response->unpack($raw);
-                                  is($res->status,200,'status: 200');
-                                  is($res->header->type,'string','header->type');
-                                  is($res->payload->[0],'a raw something_raw','payload raw');
-                                  # is($res->payload->[1],'stringifyed json','payload JSON lowercase');
-                                  $done->send();
-                              });
-         $client->send_bytes($msg->pack({foo=>'bar'},{foo=>42}));
-         return $c;
-     },
-     "post" => sub {
-         my $done = shift;
-         my $msg = ZMQx::RPC::Message::Request->new(
-                                                    command=>'post',
-                                                   );
-         my $c = AnyEvent->io(
-                              fh   => $client->get_fd,
-                              poll => "r",
-                              cb   =>             sub {
-                                  my $raw = $client->receive_bytes(1);
-                                  my $res = ZMQx::RPC::Message::Response->unpack($raw);
-                                  is($res->status,200,'status: 200');
-                                  is($res->header->type,'string','header->type');
-                                  is($res->payload->[0], 0, 'Got 0');
-                                  ok(!$post->ready(), 'Callback not called yet');
-                                  $done->send();
-                              });
-         $client->send_bytes($msg->pack());
-         return $c;
-     },
-     "post 2" => sub {
-         my $done = shift;
-         my $msg = ZMQx::RPC::Message::Request->new(
-                                                    command=>'post',
-                                                   );
-         ok(!$post->ready(), 'Callback not called yet');
-         my $c = AnyEvent->io(
-                              fh   => $client->get_fd,
-                              poll => "r",
-                              cb   =>             sub {
-                                  my $raw = $client->receive_bytes(1);
-                                  my $res = ZMQx::RPC::Message::Response->unpack($raw);
-                                  is($res->status,200,'status: 200');
-                                  is($res->header->type,'string','header->type');
-                                  is($res->payload->[0], 1, 'Got 1');
-                                  $done->send();
-                              });
-         $client->send_bytes($msg->pack('Hello', 'World'));
-         # At some point after here the callback is called.
-         return $c;
-     },
-     "post 3" => sub {
-         my $done = shift;
-         my $msg = ZMQx::RPC::Message::Request->new(
-                                                    command=>'post',
-                                                   );
-         ok($post->ready(), 'Callback has been called');
-         my @got = $post->recv();
-         is_deeply(\@got,
-                   ['Hello from the callback',
-                    'World',
-                   ], 'Callback results');
-         my $c = AnyEvent->io(
-                              fh   => $client->get_fd,
-                              poll => "r",
-                              cb   =>             sub {
-                                  my $raw = $client->receive_bytes(1);
-                                  my $res = ZMQx::RPC::Message::Response->unpack($raw);
-                                  is($res->status,200,'status: 200');
-                                  is($res->header->type,'string','header->type');
-                                  is($res->payload->[0], 'Hello', 'Got Hello');
-                                  $done->send();
-                              });
-         $client->send_bytes($msg->pack());
-         return $c;
-     },
+     ["echo", sub {
+          my $msg = ZMQx::RPC::Message::Request->new(command=>'echo');
+          $client->send_bytes($msg->pack('hello world'));
+      }, sub {
+          my $raw = $client->receive_bytes(1);
+          my $res = ZMQx::RPC::Message::Response->unpack($raw);
+          is($res->status,200,'status: 200');
+          is($res->header->type,'string','header->type');
+          is($res->payload->[0],'HELLO WORLD','payload string uppercase');
+          is($res->payload->[1],'hello world','payload string lowercase');
+      }],
+     ["echo_ref", sub {
+          my $msg = ZMQx::RPC::Message::Request->new(
+                                                     command=>'echo_ref',
+                                                     header=>ZMQx::RPC::Header->new(type=>'JSON'),
+                                                    );
+          $client->send_bytes($msg->pack({foo=>'bar'},{foo=>42}));
+      }, sub {
+          my $raw = $client->receive_bytes(1);
+          my $res = ZMQx::RPC::Message::Response->unpack($raw);
+          is($res->status,200,'status: 200');
+          is($res->header->type,'JSON','header->type');
+          is($res->payload->[0]{foo},'BAR','payload JSON uppercase');
+          is($res->payload->[1]{foo},42,'payload JSON uppercase');
+      }],
+     ["something_raw", sub {
+          my $msg = ZMQx::RPC::Message::Request->new(
+                                                     command=>'something_raw',
+                                                     header=>ZMQx::RPC::Header->new(type=>'JSON'),
+                                                    );
+          $client->send_bytes($msg->pack({foo=>'bar'},{foo=>42}));
+      }, sub {
+          my $raw = $client->receive_bytes(1);
+          my $res = ZMQx::RPC::Message::Response->unpack($raw);
+          is($res->status,200,'status: 200');
+          is($res->header->type,'string','header->type');
+          is($res->payload->[0],'a raw something_raw','payload raw');
+      }],
+     ["post", sub {
+          my $msg = ZMQx::RPC::Message::Request->new(
+                                                     command=>'post',
+                                                    );
+          $client->send_bytes($msg->pack());
+      }, sub {
+          my $raw = $client->receive_bytes(1);
+          my $res = ZMQx::RPC::Message::Response->unpack($raw);
+          is($res->status,200,'status: 200');
+          is($res->header->type,'string','header->type');
+          is($res->payload->[0], 0, 'Got 0');
+          ok(!$post->ready(), 'Callback not called yet');
+      }],
+     ["post 2", sub {
+          my $msg = ZMQx::RPC::Message::Request->new(
+                                                     command=>'post',
+                                                    );
+          ok(!$post->ready(), 'Callback not called yet');
+          $client->send_bytes($msg->pack('Hello', 'World'));
+          # At some point after here the callback is called.
+      }, sub {
+          my $raw = $client->receive_bytes(1);
+          my $res = ZMQx::RPC::Message::Response->unpack($raw);
+          is($res->status,200,'status: 200');
+          is($res->header->type,'string','header->type');
+          is($res->payload->[0], 1, 'Got 1');
+      }],
+     ["post 3", sub {
+          my $msg = ZMQx::RPC::Message::Request->new(
+                                                     command=>'post',
+                                                    );
+          ok($post->ready(), 'Callback has been called');
+          my @got = $post->recv();
+          is_deeply(\@got,
+                    ['Hello from the callback',
+                     'World',
+                    ], 'Callback results');
+          $client->send_bytes($msg->pack());
+      }, sub {
+          my $raw = $client->receive_bytes(1);
+          my $res = ZMQx::RPC::Message::Response->unpack($raw);
+          is($res->status,200,'status: 200');
+          is($res->header->type,'string','header->type');
+          is($res->payload->[0], 'Hello', 'Got Hello');
+      }],
     );
 
 
@@ -238,11 +195,19 @@ my @tests =
             return;
         }
         undef @state;
-        my ($desc, $next_test) = splice @tests, 0, 2;
+        my ($desc, $out, $back) = @{shift @tests};
         note "Starting subtest $desc";
         $done = AnyEvent->condvar();
         $done->cb(\&launch_next_test);
-        @state = $next_test->($done);
+        if (defined $back) {
+            @state = $client->anyevent_watcher(sub {
+                                                   $back->();
+                                                   $done->send();
+                                               });
+            $out->();
+        } else {
+            @state = $out->($done);
+        }
     };
 }
 
