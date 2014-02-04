@@ -181,34 +181,30 @@ my @tests =
     );
 
 
-{
-    # This variable feels ugly, but the way things are structured, we
+sub launch_next_test {
+    unless (@tests) {
+        diag "Out of tests, so terminating server";
+        $rpc->_server_is_running(0);
+        # We're done.
+        return;
+    }
+    # These varaiables feel ugly, but the way things are structured, we
     # need a way to keep condition variables around until the entire
     # test is done.
-    my @state;
-    my $done;
-    sub launch_next_test {
-        unless (@tests) {
-            diag "Out of tests, so terminating server";
-            $rpc->_server_is_running(0);
-            # We're done.
-            return;
-        }
-        undef @state;
-        my ($desc, $out, $back) = @{shift @tests};
-        note "Starting subtest $desc";
-        $done = AnyEvent->condvar();
-        $done->cb(\&launch_next_test);
-        if (defined $back) {
-            @state = $client->anyevent_watcher(sub {
-                                                   $back->();
-                                                   $done->send();
-                                               });
-            $out->();
-        } else {
-            @state = $out->($done);
-        }
-    };
+    state (@state, $done);
+    my ($desc, $out, $back) = @{shift @tests};
+    note "Starting subtest $desc";
+    $done = AnyEvent->condvar();
+    $done->cb(\&launch_next_test);
+    if (defined $back) {
+        @state = $client->anyevent_watcher(sub {
+                                               $back->();
+                                               $done->send();
+                                           });
+        $out->();
+    } else {
+        @state = $out->($done);
+    }
 }
 
 # Serve up the first test:
