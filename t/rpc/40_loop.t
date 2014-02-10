@@ -21,6 +21,7 @@ with 'ZMQx::RPC::Loop' => {
         'post',
     ]
 };
+use Test::More;
 
 sub something_raw {
     my ($self, $req ) = @_;
@@ -48,14 +49,26 @@ sub echo_ref {
     return @new;
 }
 
+my $post = AnyEvent->condvar;
+
 sub post {
     my ($self, @payload ) = @_;
-    # TODO - Use NFD to decompose the message into letters and accents, and
-    # hence ROT13 letters with diacriticals.
+    state $s = 0;
     my $res = ZMQx::RPC::Message::Response->new(
-        status=>200,
-        payload=>[map {tr/A-Za-z/N-ZA-Mn-za-m/r} @payload]
+        status=>200
     );
+    if (@payload) {
+        $res->post_send(sub {
+            my ($req, $res) = @_;
+            isa_ok($req, 'ZMQx::RPC::Message::Request', 'callback first arg');
+            isa_ok($res, 'ZMQx::RPC::Message::Response', 'callback second arg');
+            $s = $payload[0];
+            $post->send('Hello from the callback', $payload[1]);
+        });
+    }
+    $res->payload([$s]);
+    ++$s;
+
     return $res;
 }
 
@@ -80,101 +93,123 @@ my $stop = AnyEvent->timer(
     }
 );
 
-my $send1 = AnyEvent->timer(
-    after=>0.2,
-    cb=>sub {
-        my $msg = ZMQx::RPC::Message::Request->new(command=>'echo');
-        $client->send_bytes($msg->pack('hello world'));
-    }
-);
-my $receive1 = AnyEvent->timer(
-    after=>0.4,
-    cb=>sub {
-        my $raw = $client->receive_bytes(1);
-        my $res = ZMQx::RPC::Message::Response->unpack($raw);
-        is($res->status,200,'status: 200');
-        is($res->header->type,'string','header->type');
-        is($res->payload->[0],'HELLO WORLD','payload string uppercase');
-        is($res->payload->[1],'hello world','payload string lowercase');
+my @tests =
+    (
+     ["echo", sub {
+          my $msg = ZMQx::RPC::Message::Request->new(command=>'echo');
+          $client->send_bytes($msg->pack('hello world'));
+      }, sub {
+          my $raw = $client->receive_bytes(1);
+          my $res = ZMQx::RPC::Message::Response->unpack($raw);
+          is($res->status,200,'status: 200');
+          is($res->header->type,'string','header->type');
+          is($res->payload->[0],'HELLO WORLD','payload string uppercase');
+          is($res->payload->[1],'hello world','payload string lowercase');
+      }],
+     ["echo_ref", sub {
+          my $msg = ZMQx::RPC::Message::Request->new(
+                                                     command=>'echo_ref',
+                                                     header=>ZMQx::RPC::Header->new(type=>'JSON'),
+                                                    );
+          $client->send_bytes($msg->pack({foo=>'bar'},{foo=>42}));
+      }, sub {
+          my $raw = $client->receive_bytes(1);
+          my $res = ZMQx::RPC::Message::Response->unpack($raw);
+          is($res->status,200,'status: 200');
+          is($res->header->type,'JSON','header->type');
+          is($res->payload->[0]{foo},'BAR','payload JSON uppercase');
+          is($res->payload->[1]{foo},42,'payload JSON uppercase');
+      }],
+     ["something_raw", sub {
+          my $msg = ZMQx::RPC::Message::Request->new(
+                                                     command=>'something_raw',
+                                                     header=>ZMQx::RPC::Header->new(type=>'JSON'),
+                                                    );
+          $client->send_bytes($msg->pack({foo=>'bar'},{foo=>42}));
+      }, sub {
+          my $raw = $client->receive_bytes(1);
+          my $res = ZMQx::RPC::Message::Response->unpack($raw);
+          is($res->status,200,'status: 200');
+          is($res->header->type,'string','header->type');
+          is($res->payload->[0],'a raw something_raw','payload raw');
+      }],
+     ["post", sub {
+          my $msg = ZMQx::RPC::Message::Request->new(
+                                                     command=>'post',
+                                                    );
+          $client->send_bytes($msg->pack());
+      }, sub {
+          my $raw = $client->receive_bytes(1);
+          my $res = ZMQx::RPC::Message::Response->unpack($raw);
+          is($res->status,200,'status: 200');
+          is($res->header->type,'string','header->type');
+          is($res->payload->[0], 0, 'Got 0');
+          ok(!$post->ready(), 'Callback not called yet');
+      }],
+     ["post 2", sub {
+          my $msg = ZMQx::RPC::Message::Request->new(
+                                                     command=>'post',
+                                                    );
+          ok(!$post->ready(), 'Callback not called yet');
+          $client->send_bytes($msg->pack('Hello', 'World'));
+          # At some point after here the callback is called.
+      }, sub {
+          my $raw = $client->receive_bytes(1);
+          my $res = ZMQx::RPC::Message::Response->unpack($raw);
+          is($res->status,200,'status: 200');
+          is($res->header->type,'string','header->type');
+          is($res->payload->[0], 1, 'Got 1');
+      }],
+     ["post 3", sub {
+          my $msg = ZMQx::RPC::Message::Request->new(
+                                                     command=>'post',
+                                                    );
+          ok($post->ready(), 'Callback has been called');
+          my @got = $post->recv();
+          is_deeply(\@got,
+                    ['Hello from the callback',
+                     'World',
+                    ], 'Callback results');
+          $client->send_bytes($msg->pack());
+      }, sub {
+          my $raw = $client->receive_bytes(1);
+          my $res = ZMQx::RPC::Message::Response->unpack($raw);
+          is($res->status,200,'status: 200');
+          is($res->header->type,'string','header->type');
+          is($res->payload->[0], 'Hello', 'Got Hello');
+      }],
+    );
 
-    }
-);
 
-my $send2 = AnyEvent->timer(
-    after=>0.6,
-    cb=>sub {
-        my $msg = ZMQx::RPC::Message::Request->new(
-            command=>'echo_ref',
-            header=>ZMQx::RPC::Header->new(type=>'JSON'),
-        );
-        $client->send_bytes($msg->pack({foo=>'bar'},{foo=>42}));
-    }
-);
-my $receive2 = AnyEvent->timer(
-    after=>0.9,
-    cb=>sub {
-        my $raw = $client->receive_bytes(1);
-        my $res = ZMQx::RPC::Message::Response->unpack($raw);
-        is($res->status,200,'status: 200');
-        is($res->header->type,'JSON','header->type');
-        is($res->payload->[0]{foo},'BAR','payload JSON uppercase');
-        is($res->payload->[1]{foo},42,'payload JSON uppercase');
-    }
-);
-
-my $send3 = AnyEvent->timer(
-    after=>1,
-    cb=>sub {
-        my $msg = ZMQx::RPC::Message::Request->new(
-            command=>'something_raw',
-            header=>ZMQx::RPC::Header->new(type=>'JSON'),
-        );
-        $client->send_bytes($msg->pack({foo=>'bar'},{foo=>42}));
-    }
-);
-my $receive3 = AnyEvent->timer(
-    after=>1.2,
-    cb=>sub {
-        my $raw = $client->receive_bytes(1);
-        my $res = ZMQx::RPC::Message::Response->unpack($raw);
-        is($res->status,200,'status: 200');
-        is($res->header->type,'string','header->type');
-        is($res->payload->[0],'a raw something_raw','payload raw');
-       # is($res->payload->[1],'stringifyed json','payload JSON lowercase');
-
-    }
-);
-
-my $send4 = AnyEvent->timer(
-    after=>1.4,
-    cb=>sub {
-        my $msg = ZMQx::RPC::Message::Request->new(
-            command=>'post',
-        );
-        $client->send_bytes($msg->pack('Hello', 'World'));
-    }
-);
-my $receive4 = AnyEvent->timer(
-    after=>1.6,
-    cb=>sub {
-        my $raw = $client->receive_bytes(1);
-        my $res = ZMQx::RPC::Message::Response->unpack($raw);
-        is($res->status,200,'status: 200');
-        is($res->header->type,'string','header->type');
-        is($res->payload->[0],'Uryyb','Hello');
-        is($res->payload->[1],'Jbeyq','world');
-
+sub launch_next_test {
+    unless (@tests) {
+        diag "Out of tests, so terminating server";
         $rpc->_server_is_running(0);
+        # We're done.
+        return;
     }
-);
+    # These varaiables feel ugly, but the way things are structured, we
+    # need a way to keep condition variables around until the entire
+    # test is done.
+    state (@state, $done);
+    my ($desc, $out, $back) = @{shift @tests};
+    note "Starting subtest $desc";
+    $done = AnyEvent->condvar();
+    $done->cb(\&launch_next_test);
+    if (defined $back) {
+        @state = $client->anyevent_watcher(sub {
+                                               $back->();
+                                               $done->send();
+                                           });
+        $out->();
+    } else {
+        @state = $out->($done);
+    }
+}
 
+# Serve up the first test:
+launch_next_test();
 
-$rpc->loop($server);
+$rpc->loop($server, $client);
 
 done_testing();
-
-
-
-
-
-
