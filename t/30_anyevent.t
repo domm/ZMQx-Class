@@ -5,7 +5,6 @@ use 5.010;
 use Test::Most;
 use ZMQx::Class;
 use AnyEvent;
-use ZMQ::LibZMQ3;
 use Data::Dumper;
 use ZMQ::Constants qw(ZMQ_DONTWAIT);
 

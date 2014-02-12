@@ -36,6 +36,19 @@ subtest 'req-rep tcp' => sub {
     cmp_deeply($got,\@send,'got message');
 };
 
+subtest 'router-rep tcp' => sub {
+    my $server = ZMQx::Class->socket($context, 'ROUTER', bind =>'tcp://*:'.$port );
+    my $client = ZMQx::Class->socket($context, 'REQ', connect =>'tcp://localhost:'.$port );
+
+    my @send = ('Hello','World');
+    $client->send(\@send);
+    my $got = $server->receive('blocking');
+    my ($identifier,$null,@message) = @$got;
+    is($null, '', "Null must be an empty string for generic identifiers");
+    explain ($got);
+    cmp_deeply(\@message,\@send,'got message');
+};
+
 subtest 'send a string' => sub {
     my $pull = ZMQx::Class->socket($context, 'PULL', bind =>'tcp://*:'.$port );
     my $push = ZMQx::Class->socket($context, 'PUSH', connect =>'tcp://localhost:'.$port );
