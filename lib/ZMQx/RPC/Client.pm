@@ -4,12 +4,15 @@ use warnings;
 use Log::Any qw($log);
 use Carp qw(croak carp);
 
-use vars qw(@EXPORT_OK);
-use parent 'Exporter';
-
-@EXPORT_OK = qw(rpc_bind);
+sub new {
+    my $class = shift;
+    carp('Odd number of arguments passed to new')
+        if @_ % 2;
+    bless \@_, $class;
+}
 
 sub rpc_bind {
+    my $self = shift;
     # Mandatory are:
     # server
     #     an object that quacks like ZMQ::Class::Socket, or a function to call
@@ -26,6 +29,7 @@ sub rpc_bind {
                 type => 'string',
                 # Default return type. Also valid Item and List
                 return => 'ArrayRef',
+                (ref $self ? @$self : ()),
                 @_);
     my ($command, $server, $type, $on_error, $return)
         = @args{qw(command server type on_error return)};
