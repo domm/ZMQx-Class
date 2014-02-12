@@ -24,6 +24,8 @@ sub rpc_bind {
     #     A callback to handle errors. Assumed to throw, or to return a default.
     # server_name:
     #     A descriptive name for the server to use in log messages.
+    # munge_args:
+    #     A callback to transform the arguments ready to pass to pack()
     my %args = (
                 # Default parameter type. Maybe this should be JSON
                 type => 'string',
@@ -52,7 +54,10 @@ sub rpc_bind {
         eval {
             # We're actually a closure, not a method.
             # This probably needs to be "fixed" to be general.
-            $socket->send_bytes($msg->pack(@_[1..$#_]));
+            # A ternary avoids entering a scope
+            $args{munge_args}
+                ? $socket->send_bytes($msg->pack($args{munge_args}(@_)))
+                    : $socket->send_bytes($msg->pack(@_[1..$#_]));
 
             $log->debugf("Sent message >%.40s< to $server", join(",", $command, @_));
             my $raw = $socket->receive_bytes(1);
