@@ -27,8 +27,8 @@ sub rpc_bind {
                 # Default return type. Also valid Item and List
                 return => 'ArrayRef',
                 @_);
-    my ($command, $server, $type, $on_error)
-        = @args{qw(command server type on_error)};
+    my ($command, $server, $type, $on_error, $return)
+        = @args{qw(command server type on_error return)};
     croak('command is a mandatory argument')
         unless length $command;
     croak('server is a mandatory argument')
@@ -41,7 +41,7 @@ sub rpc_bind {
             unless ref $socket;
 
         my $msg = ZMQx::RPC::Message::Request->new(command => $command,
-                                                   type => $type,
+                                                   header=>ZMQx::RPC::Header->new(type => $type),
                                                   );
 
         my $response;
@@ -66,7 +66,12 @@ sub rpc_bind {
             $log->error($@);
             croak $@;
         }
-        return $response->payload;
+        return $response->payload
+          if $return eq 'ArrayRef';
+        return $response->payload->[0]
+          if $return eq 'Item';
+        # Assume 'List'
+        return @{$response->payload}
     };
 }
 
