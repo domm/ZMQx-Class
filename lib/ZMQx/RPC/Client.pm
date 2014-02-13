@@ -29,7 +29,8 @@ sub rpc_bind {
     my %args = (
                 # Default parameter type. Maybe this should be JSON
                 type => 'string',
-                # Default return type. Also valid Item and List
+                # Default return type. Also valid Item, List and a code
+                # reference.
                 return => 'ArrayRef',
                 (ref $self ? @$self : ()),
                 @_);
@@ -75,10 +76,13 @@ sub rpc_bind {
             $log->error($@);
             croak $@;
         }
+        # Hopefully in order, most frequent first:
         return $response->payload
           if $return eq 'ArrayRef';
         return $response->payload->[0]
           if $return eq 'Item';
+        return $return->($response, \@_, $msg, \%args)
+            if 'CODE' eq ref $return;
         # Assume 'List'
         return @{$response->payload}
     };
