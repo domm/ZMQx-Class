@@ -71,7 +71,7 @@ sub rpc_bind {
                 unless $response->status == 200;
         };
         if ($@) {
-            return &$on_error($@, \@_, $msg, $response, \%args)
+            return &$on_error($@, $response, \@_, $msg, \%args)
                 if $on_error;
             $log->error($@);
             croak $@;
