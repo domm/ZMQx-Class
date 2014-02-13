@@ -59,12 +59,12 @@ sub rpc_bind {
                 ? $socket->send_bytes($msg->pack($args{munge_args}(@_)))
                     : $socket->send_bytes($msg->pack(@_[1..$#_]));
 
-            $log->debugf("Sent message >%.40s< to $server", join(",", $command, @_));
+            $log->debugf("Sent message >%.40s< to $server_name", join(",", $command, @_));
             my $raw = $socket->receive_bytes(1);
-            die "no response from $server for $command"
+            die "no response from $server_name for $command"
                 unless $raw;
             $response = ZMQx::RPC::Message::Response->unpack($raw);
-            die "failed to unpack response from $server for $command"
+            die "failed to unpack response from $server_name for $command"
                 unless $response;
             die $response->payload->[0]
                 unless $response->status == 200;
