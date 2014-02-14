@@ -1,6 +1,9 @@
 package ZMQx::RPC::Client;
 use strict;
 use warnings;
+use ZMQx::RPC::Message::Request;
+use ZMQx::RPC::Message::Response;
+use ZMQx::RPC::Header;
 use Log::Any qw($log);
 use Carp qw(croak carp);
 
