@@ -51,23 +51,23 @@ role {
                 return
                     unless $server->socket->has_pollin
                     ;    # Check if this works with a big message / high load
-                $log->debugf("i have a poll_in");
+                #$log->debugf("i have a poll_in");
 
                 # We have to deal in bytes and do the encoding/decoding ourselves
                 # as the envelope section is bytes, not UTF-8-encoded characters.
                 while ( my $msg = $server->receive_bytes ) {
-                    $log->debugf("i have a msg");
+                    #$log->debugf("i have a msg");
                     my $envelope = $has_envelope && $self->unpack_envelope($msg);
                     my $req;
                     my $res = eval {
                         $req = ZMQx::RPC::Message::Request->unpack($msg);
-                        $log->debugf("i have a req");
+                        #$log->debugf("i have a req");
 
                         # TODO: handle timeouts using alarm() because AnyEvent won't be interrupted in $cmd
                         my $cmd = $req->command;
 
                         if ( $DISPATCH{$cmd} ) {
-                            $log->debugf("Dispatching $cmd");
+                            #$log->debugf("Dispatching $cmd");
                             my @cmd_res = $self->$cmd( @{ $req->payload } );
                             if (@cmd_res == 1 && blessed($cmd_res[0])
                                 && $cmd_res[0]->DOES('ZMQx::RPC::Message::Response')) {
@@ -81,7 +81,7 @@ role {
                             return $req->new_response( \@cmd_res );
                         }
                         elsif ( $DISPATCH_RAW{$cmd} ) {
-                            $log->debugf("Raw dispatching $cmd");
+                            #$log->debugf("Raw dispatching $cmd");
                             return $self->$cmd($req);
                         }
                         else {
