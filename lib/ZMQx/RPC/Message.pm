@@ -73,7 +73,12 @@ sub _decode_payload {
         #        }
     }
     elsif ( my $deserializer = $self->deserializable_types->{$type} ) {
-        @payload = map { $deserializer->($_) } @$wire_payload;
+        while (my ($i, $v) = each @$wire_payload) {
+            eval {
+                push (@payload, $deserializer->($v));
+                1;
+            } or die "Problem deserialising parameter $i for " . $self->command()  . " as $type: $@";
+        }
     }
     else {
         croak "type >$type< not defined";
