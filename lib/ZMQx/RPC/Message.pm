@@ -77,7 +77,7 @@ sub _decode_payload {
             eval {
                 push (@payload, $deserializer->($v));
                 1;
-            } or die "Problem deserialising parameter $i for " . $self->command()  . " as $type: $@";
+            } or die "Problem deserialising parameter $i for " . ($self->can('command') ? $self->command : $self )  . " as $type: $@";
         }
     }
     else {
