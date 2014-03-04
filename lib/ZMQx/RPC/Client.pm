@@ -74,6 +74,10 @@ sub rpc_bind {
                 unless $response->status == 200;
         };
         if ($@) {
+            if ($@ =~ /^no response from/) {
+                # TODO: try to reconnect to Server
+                # TODO: if not possible, tell YP to remove Server?
+            }
             return &$on_error($@, $response, \@_, $msg, \%args)
                 if $on_error;
             $log->error($@);
