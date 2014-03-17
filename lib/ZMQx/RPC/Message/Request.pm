@@ -11,7 +11,7 @@ has 'command' => (is=>'ro',isa=>'Str',required=>1);
 has '+header' => (default=>sub {
     return ZMQx::RPC::Header->new(
         type=>'string',
-        timeout=>500.
+        timeout=>500,
     );
 });
 

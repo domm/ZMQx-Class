@@ -6,7 +6,7 @@ use 5.010;
 # ABSTRACT: A ZMQ Socket
 
 use Moose;
-use Carp qw(croak carp);
+use Carp qw(croak carp confess);
 use namespace::autoclean;
 use Package::Stash;
 use Encode qw//;
@@ -196,7 +196,7 @@ sub _send_string_utf8 {
         1;
     }) {
         # Propagate the error from send.
-        die;
+        confess "Message: " . $@;
     }
     return $length;
 }
