@@ -85,7 +85,7 @@ role {
                             return $self->$cmd($req);
                         }
                         else {
-                            my $error = "no such command $cmd in package "
+                            my $error = "command $cmd not registered for package "
                                 . ref($self);
                             $log->info($error);
                             return $req->new_error_response( 400, $error );
