@@ -63,7 +63,7 @@ sub rpc_bind {
                 ? $socket->send_bytes($msg->pack($args{munge_args}(@_)))
                     : $socket->send_bytes($msg->pack(@_[1..$#_]));
 
-            $log->debugf("Sent message >%.40s< to $server_name", join(",", $command, @_));
+            # $log->debugf("Sent message >%.40s< to $server_name", join(",", $command, @_));
             my $raw = $socket->receive_bytes(1);
             die "no response from $server_name for $command"
                 unless $raw;
