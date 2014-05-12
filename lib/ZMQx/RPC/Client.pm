@@ -77,10 +77,16 @@ sub rpc_bind {
             if ($@ =~ /^no response from/) {
                 # TODO: try to reconnect to Server
                 # TODO: if not possible, tell YP to remove Server?
+                $log->debug('No response from Server, socket might be broken, TODO');
             }
-            return &$on_error($@, $response, \@_, $msg, \%args)
-                if $on_error;
-            $log->error($@);
+            if ( $on_error ) {
+                $log->errorf('Dispatching to on_error callback %s, error: %s', $on_error, $@);
+                return &$on_error($@, $response, \@_, $msg, \%args)
+            }
+            else {
+                $log->errorf('No error handler installed, got error %s', $@);
+            }
+
             croak $@;
         }
         # Hopefully in order, most frequent first:
