@@ -14,6 +14,10 @@ use Encode qw//;
 use ZMQ::FFI;
 use ZMQ::Constants ':all';
 
+use Log::Any qw($log);
+
+use constant MAX_LAZY_PIRATE_TRIES => 4;
+
 # TODO
 # has 'bind_or_connect',
 # has 'address',
@@ -186,17 +190,22 @@ sub _send_string_utf8 {
     # a value that is truthful.
 
     my $length = utf8::upgrade($_[1]);
-    unless (eval {
-        # Convert to the UTF-8 representation of the Unicode characters.
-        # It's actually just flipping a flag bit.
-        utf8::encode($_[1]);
-        $self->socket->send($_[1], $flags);
-        # Flip it back:
-        utf8::decode($_[1]);
-        1;
-    }) {
-        # Propagate the error from send.
-        confess "Message: " . $@;
+    for my $cnt (1 .. MAX_LAZY_PIRATE_TRIES) {
+        my $ok = eval {
+            # Convert to the UTF-8 representation of the Unicode characters.
+            # It's actually just flipping a flag bit.
+            utf8::encode($_[1]);
+            $self->socket->send($_[1], $flags);
+            # Flip it back:
+            utf8::decode($_[1]);
+            1;
+        } or do {
+            if ($cnt < 4 && $self->_lazy_pirate) {
+                next;
+            }
+            confess "Message: " . $@;
+        };
+        last if $ok;
     }
     return $length;
 }
@@ -239,6 +248,7 @@ are sending multi-part messages with ZMQ routing information.
 
 sub send_bytes {
     my ( $self, $parts, $flags ) = @_;
+
     my $length = 0;
 
     if ( !ref($parts) ) {
@@ -250,8 +260,41 @@ sub send_bytes {
             unless utf8::downgrade( $parts->[$_], 1 );
         $length += length $parts->[$_];
     }
-    $self->socket->send_multipart($parts, $flags);
+    for my $cnt (1 .. MAX_LAZY_PIRATE_TRIES) {
+        my $ok = eval {
+            $self->socket->send_multipart($parts, $flags);
+            1;
+        } or do {
+            if ($cnt < 4 && $self->_lazy_pirate) {
+                next;
+            }
+            confess "Message: " . $@;
+        };
+        last if $ok;
+    }
+
     return $length;
+}
+
+sub _lazy_pirate {
+    my $self = shift;
+    return if $self->_can_send;
+
+    $log->warnf("Socket is in bad state, reconnect via Lazy Pirate [pid: %i, name: %s]", $$, $0);
+    my ( $class, @call ) = @{ $self->_init_opts_for_cloning };
+    my $socket = $class->socket(@call);
+    $self->_socket($socket->socket);
+    return 1;
+}
+
+sub _can_send {
+    my $self = shift;
+    return $self->socket->has_pollout == 2 ? 1 : 0;
+}
+
+sub _message_available {
+    my $self = shift;
+    return $self->socket->has_pollin == 1 ? 1 : 0;
 }
 
 sub receive_multipart {
