@@ -59,6 +59,7 @@ be set up for the child process.
 sub socket {
     my ($self) = @_;
     if ( $$ != $self->_pid ) {
+
         # TODO instead of init_opts_for_cloning get stuff required to re-initate via getsockopt etc
         my ( $class, @call ) = @{ $self->_init_opts_for_cloning };
         my $socket = $class->socket(@call);
@@ -83,9 +84,7 @@ C<bind> will C<die> if it cannot bind.
 sub bind {
     my ( $self, $address ) = @_;
 
-    eval {
-        $self->socket->bind($address);
-    };
+    eval { $self->socket->bind($address); };
     if ($@) {
         croak "Cannot bind $@";
         return;
@@ -107,9 +106,7 @@ C<connect> will C<die> if it cannot connect.
 sub connect {
     my ( $self, $address ) = @_;
 
-    eval {
-        $self->socket->connect($address);
-    };
+    eval { $self->socket->connect($address); };
     if ($@) {
         croak "Cannot connect $@";
         return;
@@ -130,9 +127,9 @@ C<ZMQ::Constants>.
 =cut
 
 sub setsockopt {
-    my ($self, $constval, @args) = @_;
+    my ( $self, $constval, @args ) = @_;
 
-    my $sockopt_type = ZMQ::Constants::get_sockopt_type( $constval );
+    my $sockopt_type = ZMQ::Constants::get_sockopt_type($constval);
     return $self->socket->set( $constval, $sockopt_type, @args );
 
 }
@@ -148,9 +145,9 @@ from C<ZMQ::Constants>.
 =cut
 
 sub getsockopt {
-    my ($self, $constval) = @_;
+    my ( $self, $constval ) = @_;
 
-    my $sockopt_type = ZMQ::Constants::get_sockopt_type( $constval );
+    my $sockopt_type = ZMQ::Constants::get_sockopt_type($constval);
     return $self->socket->get( $constval, $sockopt_type );
 
 }
@@ -179,7 +176,8 @@ exception on error.
 # TODO - can't we send in encodings other than UTF-8
 
 sub _send_string_utf8 {
-    my ($self, undef, $flags) = @_;
+    my ( $self, undef, $flags ) = @_;
+
     # Explicitly avoiding copying the string we send, and these "conversions"
     # are in place and a NO-OP on a string that is already internally UTF-8.
 
@@ -189,18 +187,20 @@ sub _send_string_utf8 {
     # probably we should simply deprecate returning the length, and return
     # a value that is truthful.
 
-    my $length = utf8::upgrade($_[1]);
-    for my $cnt (1 .. MAX_LAZY_PIRATE_TRIES) {
+    my $length = utf8::upgrade( $_[1] );
+    for my $cnt ( 1 .. MAX_LAZY_PIRATE_TRIES ) {
         my $ok = eval {
+
             # Convert to the UTF-8 representation of the Unicode characters.
             # It's actually just flipping a flag bit.
-            utf8::encode($_[1]);
-            $self->socket->send($_[1], $flags);
+            utf8::encode( $_[1] );
+            $self->socket->send( $_[1], $flags );
+
             # Flip it back:
-            utf8::decode($_[1]);
+            utf8::decode( $_[1] );
             1;
         } or do {
-            if ($cnt < 4 && $self->_lazy_pirate) {
+            if ( $cnt < 4 && $self->_lazy_pirate ) {
                 next;
             }
             confess "Message: " . $@;
@@ -220,16 +220,19 @@ sub send {
     # As we have steps to do both before and after the call to the ZMQ send,
     # we would need *two* loops locally if we called send_multipart. So it's
     # actually less work for us to deal with all the looping ourselves.
-    if (ref $parts) {
+    if ( ref $parts ) {
         $flags //= 0;
-        foreach (0 .. $#{$parts} - 1 ) {
-            $length += $self->_send_string_utf8($parts->[$_], $flags | ZMQ_SNDMORE);
+        foreach ( 0 .. $#{$parts} - 1 ) {
+            $length +=
+                $self->_send_string_utf8( $parts->[$_],
+                $flags | ZMQ_SNDMORE );
         }
-        $parts = $parts->[$#{$parts}];
+        $parts = $parts->[ $#{$parts} ];
+
         # Fall through to the simple case.
     }
 
-    return $length + $self->_send_string_utf8($parts, $flags);
+    return $length + $self->_send_string_utf8( $parts, $flags );
 }
 
 =method send_bytes
@@ -255,17 +258,17 @@ sub send_bytes {
         $parts = [$parts];
     }
 
-    foreach (0 .. $#{$parts} ) {
+    foreach ( 0 .. $#{$parts} ) {
         croak("send_bytes() message (part $_) is not bytes")
             unless utf8::downgrade( $parts->[$_], 1 );
         $length += length $parts->[$_];
     }
-    for my $cnt (1 .. MAX_LAZY_PIRATE_TRIES) {
+    for my $cnt ( 1 .. MAX_LAZY_PIRATE_TRIES ) {
         my $ok = eval {
-            $self->socket->send_multipart($parts, $flags);
+            $self->socket->send_multipart( $parts, $flags );
             1;
         } or do {
-            if ($cnt < 4 && $self->_lazy_pirate) {
+            if ( $cnt < 4 && $self->_lazy_pirate ) {
                 next;
             }
             confess "Message: " . $@;
@@ -280,10 +283,13 @@ sub _lazy_pirate {
     my $self = shift;
     return if $self->_can_send;
 
-    $log->warnf("Socket is in bad state, reconnect via Lazy Pirate [pid: %i, name: %s]", $$, $0);
+    $log->warnf(
+        "Socket is in bad state, reconnect via Lazy Pirate [pid: %i, name: %s]",
+        $$, $0
+    );
     my ( $class, @call ) = @{ $self->_init_opts_for_cloning };
     my $socket = $class->socket(@call);
-    $self->_socket($socket->socket);
+    $self->_socket( $socket->socket );
     return 1;
 }
 
@@ -326,7 +332,7 @@ See t/30_anyevent.t for some examples
 sub receive {
     my ( $self, $blocking ) = @_;
 
-    return $self->receive_string( $blocking );
+    return $self->receive_string($blocking);
 }
 
 =method receive_bytes
@@ -339,17 +345,14 @@ want to receive a String (unicode), then you want to use C<receive_string>.
 
 =cut
 
-
 sub receive_bytes {
     my ( $self, $blocking ) = @_;
 
     my $flags = $blocking ? 0 : ZMQ_DONTWAIT;
 
     my @parts;
-    eval {
-        @parts = $self->socket->recv_multipart( $flags );
-    };
-    if ( $@ ) {
+    eval { @parts = $self->socket->recv_multipart($flags); };
+    if ($@) {
         return;
     }
     elsif (@parts) {
@@ -377,24 +380,24 @@ variable to true or false.
 =cut
 
 sub receive_string {
-    my ($self, $blocking, $encoding) = @_;
+    my ( $self, $blocking, $encoding ) = @_;
 
     $encoding ||= 'utf-8';
 
-    my $bytes_multi = $self->receive_bytes( $blocking );
+    my $bytes_multi = $self->receive_bytes($blocking);
 
     return unless $bytes_multi;
 
     my $str;
-    if ($encoding eq 'utf-8') {
+    if ( $encoding eq 'utf-8' ) {
 
-        $str = $self->_receive_string_utf8( $bytes_multi );
+        $str = $self->_receive_string_utf8($bytes_multi);
 
     }
     else {
 
         $str = $self->_receive_string_generic( $bytes_multi, $encoding );
-        
+
     }
 
     if (@$str) {
@@ -406,21 +409,21 @@ sub receive_string {
 }
 
 sub _receive_string_generic {
-    my ($self, $ref, $encoding) = @_;
+    my ( $self, $ref, $encoding ) = @_;
 
     my @parts;
     foreach ( 0 .. $#{$ref} ) {
-        push(@parts, Encode::decode($encoding, shift(@$ref) ) );
+        push( @parts, Encode::decode( $encoding, shift(@$ref) ) );
     }
     return \@parts;
 }
 
 sub _receive_string_utf8 {
-    my ($self, $ref) = @_;
+    my ( $self, $ref ) = @_;
 
-    if (ref $ref eq 'ARRAY') {
+    if ( ref $ref eq 'ARRAY' ) {
         foreach ( 0 .. $#{$ref} ) {
-            Encode::_utf8_on($ref->[$_]);
+            Encode::_utf8_on( $ref->[$_] );
         }
     }
 
@@ -434,7 +437,7 @@ sub subscribe {
     croak('required parameter $subscription missing')
         unless defined $subscribe;
 
-    $self->socket->subscribe( $subscribe );
+    $self->socket->subscribe($subscribe);
 }
 
 sub get_fh {
@@ -496,7 +499,6 @@ sub get_fd {
 
 }
 
-
 sub _setup_sockopt_helpers {
     my ( $const, $stash, $set_only_before_connect ) = @_;
     my $get = my $set = lc($const);
@@ -508,10 +510,12 @@ sub _setup_sockopt_helpers {
     if ( $stash->has_symbol( '&' . $const ) ) {
 
         my $constval     = &$const;
-        my $sockopt_type = ZMQ::Constants::get_sockopt_type( $constval ) or die "$const sockopt type not found";
-#        warn "$get -> $sockopt_type for $const";
-#        use Data::Dumper;
-#        warn Data::Dumper::Dumper(\%ZMQ::Constants::SOCKOPT_MAP);
+        my $sockopt_type = ZMQ::Constants::get_sockopt_type($constval)
+            or die "$const sockopt type not found";
+
+        #        warn "$get -> $sockopt_type for $const";
+        #        use Data::Dumper;
+        #        warn Data::Dumper::Dumper(\%ZMQ::Constants::SOCKOPT_MAP);
 
         if ($set_only_before_connect) {
             $stash->add_symbol(
@@ -525,7 +529,8 @@ sub _setup_sockopt_helpers {
                         $self->socket->set( $constval, $sockopt_type, @_ );
                     }
                     return $self;
-                } );
+                }
+            );
         }
         else {
             $stash->add_symbol(
@@ -533,14 +538,16 @@ sub _setup_sockopt_helpers {
                     my $self = shift;
                     $self->socket->set( $constval, $sockopt_type, @_ );
                     return $self;
-                } );
+                }
+            );
         }
-        
+
         $stash->add_symbol(
             '&' . $get => sub {
                 my $self = shift;
-                return $self->socket->get($constval, $sockopt_type);
-            } );
+                return $self->socket->get( $constval, $sockopt_type );
+            }
+        );
     }
 }
 
@@ -575,6 +582,7 @@ sub anyevent_watcher {
 
 sub close {
     my $self = shift;
+
     # warn "$$ CLOSE SOCKET";
     $self->socket->close();
 
