@@ -87,7 +87,6 @@ sub bind {
     eval { $self->socket->bind($address); };
     if ($@) {
         croak "Cannot bind $@";
-        return;
     }
 
     return $self->_connected(1);
@@ -109,7 +108,6 @@ sub connect {
     eval { $self->socket->connect($address); };
     if ($@) {
         croak "Cannot connect $@";
-        return;
     }
 
     return $self->_connected(1);
