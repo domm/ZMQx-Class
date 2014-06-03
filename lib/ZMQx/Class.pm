@@ -9,9 +9,6 @@ our $VERSION = "0.006";
 # ABSTRACT: OO Interface to ZMQ
 my $__CONTEXT = {};
 
-
-
-
 use ZMQ::FFI;
 use ZMQ::Constants qw(
     ZMQ_DEALER
@@ -118,7 +115,7 @@ sub socket {
     }
     my ( $connect, $address, $opts ) = @_;
     croak "no such socket type: $type" unless defined $types{$type};
-    
+
     my $socket = ZMQx::Class::Socket->new(
         _socket => $context->socket( $types{$type} ),
         type    => $type,
@@ -162,23 +159,23 @@ __END__
   # see example/publisher.pl
   use ZMQx::Class;
   my $publisher = ZMQx::Class->socket( 'PUB', bind => 'tcp://*:10000' );
-  
+
   while ( 1 ) {
       my $random = int( rand ( 10_000 ) );
       say "sending $random hello";
       $publisher->send( [ $random, 'hello' ] );
       select( undef, undef, undef, 0.1);
   }
-  
-  
+
+
   # a ZeroMQ subscriber
   # see example/subscriber.pl
   use ZMQx::Class;
   use Anyevent;
-  
+
   my $subscriber = ZMQx::Class->socket( 'SUB', connect => 'tcp://localhost:10000' );
   $subscriber->subscribe( '1' );
-  
+
   my $watcher = $subscriber->anyevent_watcher( sub {
       while ( my $msg = $subscriber->receive ) {
           say "got $msg->[0] saying $msg->[1]";
@@ -188,7 +185,7 @@ __END__
 
 =head1 DESCRIPTION
 
-C<ZMQx::Class> provides an object oriented & Perlish interface to L<ZeroMQ|http://www.zeromq.org/> 3.2. It builds on L<ZMQ::LibZMQ3|https://metacpan.org/module/ZMQ::LibZMQ3>.
+C<ZMQx::Class> provides an object oriented & Perlish interface to L<ZeroMQ|http://www.zeromq.org/> 3.2. It builds on L<ZMQ::FFI|https://metacpan.org/module/ZMQ::FFI>.
 
 Before you use C<ZMQx::Class>, please read the excellent <ZeroMQ Guide|http://zguide.zeromq.org>. It's a fun and interesting read, containing everything you need to get started with ZeroMQ, including lots of example code.
 
@@ -199,6 +196,6 @@ L<ZMQ|https://metacpan.org/module/ZMQ::Socket> is another perlish interface to l
 
 =head1 THANKS
 
-Thanks to L<Validad AG|http://validad.com> for sponsoring the development of this module.
+Thanks to L<Validad|http://www.validad.com/> for sponsoring the development of this module.
 
 

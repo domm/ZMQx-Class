@@ -48,7 +48,7 @@ has '_pid' => ( is => 'rw', isa => 'Int', required => 1 );
 
     $socket->socket;
 
-Returns the underlying C<ZMQ::LibZMQ3::Socket> socket. You probably won't need
+Returns the underlying C<ZMQ::FFI::SocketBase> socket. You probably won't need
 to call this method yourself.
 
 When a process containg a socket is forked, a new instance of the socket will
@@ -582,14 +582,17 @@ sub close {
     my $self = shift;
 
     # warn "$$ CLOSE SOCKET";
-    $self->socket->close();
-
+    unless ($self->socket->_socket == -1) {
+        $self->socket->close();
+    }
 }
-#
-#sub DESTROY {
-#    my $self = shift;
-#    warn "$$ IN SOCKET DESTROY";
-#    zmq_close($self->_socket);
-#}
+
+# Not needed here as the socket is closed in ZMQ::FFI::SocketBase::DEMOLISH
+# sub DESTROY {
+#     my $self = shift;
+#     return if ${^GLOBAL_PHASE} eq 'DESTRUCT';
+#     warn "$$ IN SOCKET DESTROY";
+#     $self->socket->close();
+# }
 
 1;
