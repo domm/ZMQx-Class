@@ -80,7 +80,13 @@ sub rpc_bind {
                 $log->debug('No response from Server, socket might be broken, TODO');
             }
             if ( $on_error ) {
-                $log->errorf('Dispatching to on_error callback %s, error: %s', $on_error, $@);
+                # When we are in global destruction $log *might* already been gone :-/
+                if ( defined $log ) {
+                    $log->errorf('Dispatching to on_error callback %s, error: %s', $on_error, $@);
+                }
+                else {
+                    warn sprintf('Dispatching to on_error callback %s, error: %s', $on_error, $@);
+                }
                 return &$on_error($@, $response, \@_, $msg, \%args)
             }
             else {
