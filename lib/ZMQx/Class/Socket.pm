@@ -278,6 +278,9 @@ Returns C<undef> if no message can be received.
 
 See t/30_anyevent.t for some examples
 
+NOTE: If more than one message is waiting to be received you still only get one
+AnyEvent notification, using receive in a while loop will get you all messages.
+
 =cut
 
 sub receive {

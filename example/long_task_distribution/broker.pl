@@ -11,8 +11,8 @@ use LongTaskDistribution::Broker;
 
 # In this example the tasks you want to distribute among your worker
 # processes might take a long time and tasks may have a varying
-# execution time. If round robin would be used a worker might
-# be available but not server with a pending task.
+# execution time. With round robin distribution, a worker might
+# be available but not served with a pending task.
 
 # This example has workers with a REQ socket that report to the broker
 # when they are ready to receive a new task. The broker (ROUTER socket)

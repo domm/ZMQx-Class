@@ -174,7 +174,7 @@ __END__
   # a ZeroMQ subscriber
   # see example/subscriber.pl
   use ZMQx::Class;
-  use Anyevent;
+  use AnyEvent;
   
   my $subscriber = ZMQx::Class->socket( 'SUB', connect => 'tcp://localhost:10000' );
   $subscriber->subscribe( '1' );
