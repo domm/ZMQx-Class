@@ -65,10 +65,10 @@ sub rpc_bind {
 
             # $log->debugf("Sent message >%.40s< to $server_name", join(",", $command, @_));
             my $raw = $socket->receive_bytes(1);
-            die "no response from $server_name for $command"
+            die "no response from Server >$server_name< for Command >$command<"
                 unless $raw;
             $response = ZMQx::RPC::Message::Response->unpack($raw);
-            die "failed to unpack response from $server_name for $command"
+            die "failed to unpack response from Server >$server_name< for Command >$command<"
                 unless $response;
             die $response->payload->[0]
                 unless $response->status == 200;
@@ -82,10 +82,10 @@ sub rpc_bind {
             if ( $on_error ) {
                 # When we are in global destruction $log *might* already been gone :-/
                 if ( defined $log ) {
-                    $log->errorf('Dispatching to on_error callback %s, error: %s', $on_error, $@);
+                    $log->errorf('Dispatching to on_error callback >%s<, error: >%s<', $on_error, $@);
                 }
                 else {
-                    warn sprintf('Dispatching to on_error callback %s, error: %s', $on_error, $@);
+                    warn sprintf('Dispatching to on_error callback >%s<, error: >%s<', $on_error, $@);
                 }
                 return &$on_error($@, $response, \@_, $msg, \%args)
             }
