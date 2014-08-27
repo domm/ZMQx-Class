@@ -1,5 +1,8 @@
 Revision history for ZMQx::Class
 
+0.006 2014-01-20
+    - unicode
+
 0.005   2013-08-05T15:57:14+0200
     - removed ZMQx::Class::AnyEvent in favour of $socket->anyevent_watcher
       (Thomas Klausner)
