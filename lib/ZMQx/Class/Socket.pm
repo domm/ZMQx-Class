@@ -460,6 +460,7 @@ sub get_fd {
         ZMQ_BACKLOG
         ZMQ_EVENTS
         ZMQ_IDENTITY
+        ZMQ_IPV6
         ZMQ_IPV4ONLY
         ZMQ_LAST_ENDPOINT
         ZMQ_MAXMSGSIZE
