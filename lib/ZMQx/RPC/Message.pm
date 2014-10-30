@@ -3,6 +3,7 @@ use strict;
 use warnings;
 use Moose;
 use Carp qw(croak);
+use Module::Runtime qw/use_module/;
 
 has 'header' => ( is => 'ro', isa => 'ZMQx::RPC::Header' );
 has 'payload' => ( is => 'rw', isa => 'ArrayRef', default => sub { [] } );
@@ -16,6 +17,7 @@ has 'serializable_types' => (
 has 'deserializable_types' => (
     is      => 'ro',
     default => sub {
+        use_module('JSON::XS');
         { 'JSON' => \&JSON::XS::decode_json, };
     }
 );
@@ -27,7 +29,7 @@ sub _encode_payload {
     if ( $type eq 'string' || $type eq 'raw' ) {
         while ( my ( $index, $val ) = each(@$payload) ) {
             croak("ref not allowed in string/raw message at pos $index")
-                if ref($val);
+              if ref($val);
 
             # TODO allow string ref so we can send DVD images :-)
             push( @wire_payload, $val );
@@ -56,28 +58,20 @@ sub _decode_payload {
     my $type = $self->header->type;
     my @payload;
     if ( $type eq 'string' || $type eq 'raw' ) {
+        if ( $type eq 'string' ) {
+            utf8::decode($_) for @$wire_payload;
+        }
         return $self->payload($wire_payload);
-
-        #        while (my ($index, $val) = each (@$payload)) {
-        #            croak("ref not allowed in string/raw message at pos $index") if ref($val);
-        #            # TODO allow string ref so we can send DVD images :-)
-        #            push(@wire_payload, $val);
-        #            if ($type eq 'string') {
-        #                # converts characters to utf8
-        #                utf8::encode($wire_payload[-1]);
-        #            }
-        #            else {
-        #                # will croak if contains code points > 255
-        #                utf8::downgrade($wire_payload[-1]);
-        #            }
-        #        }
     }
     elsif ( my $deserializer = $self->deserializable_types->{$type} ) {
-        while (my ($i, $v) = each @$wire_payload) {
+        while ( my ( $i, $v ) = each @$wire_payload ) {
             eval {
-                push (@payload, $deserializer->($v));
+                push( @payload, $deserializer->($v) );
                 1;
-            } or die "Problem deserialising parameter $i for " . ($self->can('command') ? $self->command : $self )  . " as $type: $@";
+            }
+              or die "Problem deserialising parameter $i for "
+              . ( $self->can('command') ? $self->command : $self )
+              . " as $type: $@";
         }
     }
     else {
