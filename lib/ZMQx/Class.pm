@@ -5,7 +5,7 @@ use 5.010;
 use ZMQx::Class::Socket;
 use Carp qw(croak carp);
 
-our $VERSION = "0.006";
+our $VERSION = "0.007";
 # ABSTRACT: OO Interface to ZMQ
 my $__CONTEXT = {};
 
