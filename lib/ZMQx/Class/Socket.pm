@@ -586,7 +586,7 @@ sub close {
     my $self = shift;
 
     # warn "$$ CLOSE SOCKET";
-    unless ($self->socket->_socket == -1) {
+    while (! ($self->socket->_socket == -1)) {
         $self->socket->close();
     }
 }
