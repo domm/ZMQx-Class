@@ -1,9 +1,11 @@
 package ZMQx::Class::Socket;
+
+# ABSTRACT: DEPRECATED: A ZMQ Socket
+# VERSION
+
 use strict;
 use warnings;
 use 5.010;
-
-# ABSTRACT: A ZMQ Socket
 
 use Moose;
 use Carp qw(croak carp confess);

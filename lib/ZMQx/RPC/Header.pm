@@ -1,4 +1,8 @@
 package ZMQx::RPC::Header;
+
+# ABSTRACT: DEPRECATED - A unfinished prototype, do not use
+# VERSION
+
 use strict;
 use warnings;
 use Moose;

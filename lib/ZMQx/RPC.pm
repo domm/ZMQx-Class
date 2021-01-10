@@ -1,5 +1,7 @@
 package ZMQx::RPC;
 
+# ABSTRACT: DEPRECATED - A unfinished prototype, do not use
+# VERSION
 
 1;
 

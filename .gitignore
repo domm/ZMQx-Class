@@ -3,3 +3,4 @@ local
 ZMQx-Class-*
 blib*
 cover_db
+.build

@@ -1,5 +1,9 @@
 Revision history for ZMQx::Class
 
+{{$NEXT}}
+    - DEPRECATED!
+
+
 0.007 Wed Oct 29 20:37:30 PDT 2014
     - String type message decode / encode utf8
 

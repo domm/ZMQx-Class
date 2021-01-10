@@ -1,4 +1,8 @@
 package ZMQx::RPC::Message::Request;
+
+# ABSTRACT: DEPRECATED - A unfinished prototype, do not use
+# VERSION
+
 use Moose;
 use strict;
 use warnings;

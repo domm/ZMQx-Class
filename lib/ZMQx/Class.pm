@@ -1,12 +1,16 @@
 package ZMQx::Class;
+
+# ABSTRACT: DEPRECATED - OO Interface to ZMQ
+# VERSION
+
+warn __PACKAGE__ .' is DEPRECATED, please do not use this module anymore';
+
 use strict;
 use warnings;
 use 5.010;
 use ZMQx::Class::Socket;
 use Carp qw(croak carp);
 
-our $VERSION = "0.007";
-# ABSTRACT: OO Interface to ZMQ
 my $__CONTEXT = {};
 
 use ZMQ::FFI;
@@ -155,6 +159,8 @@ __END__
 
 =head1 SYNOPSIS
 
+DEPRECATED - This was only a prototype and never used in production. I doubt it still works with current zmq.
+
   # a ZeroMQ publisher
   # see example/publisher.pl
   use ZMQx::Class;
@@ -185,6 +191,8 @@ __END__
 
 =head1 DESCRIPTION
 
+DEPRECATED - This was only a prototype and never used in production. I doubt it still works with current zmq. But here are the old docs:
+
 C<ZMQx::Class> provides an object oriented & Perlish interface to L<ZeroMQ|http://www.zeromq.org/> 3.2. It builds on L<ZMQ::FFI|https://metacpan.org/module/ZMQ::FFI>.
 
 Before you use C<ZMQx::Class>, please read the excellent <ZeroMQ Guide|http://zguide.zeromq.org>. It's a fun and interesting read, containing everything you need to get started with ZeroMQ, including lots of example code.
@@ -193,9 +201,7 @@ Before you use C<ZMQx::Class>, please read the excellent <ZeroMQ Guide|http://zg
 
 L<ZMQ|https://metacpan.org/module/ZMQ::Socket> is another perlish interface to libzmq. We found it to still be a bit too low-level (eg, you still need to import the sockopt-constants). ZMQ support libzmq 2 and 3, and promises a single interface to both. We are only interested in libzmq 3. ZMQx::Class includes some smartness to handle setup of context objects, even across forks. Lastly, we found this note from the docs not very promising: "Personally, I'd recommend only using this module for your one-shot scripts, and use ZMQ::LibZMQ* for all other uses."
 
-
 =head1 THANKS
 
 Thanks to L<Validad|http://www.validad.com/> for sponsoring the development of this module.
-
 

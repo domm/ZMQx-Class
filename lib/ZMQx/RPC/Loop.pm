@@ -1,4 +1,8 @@
 package ZMQx::RPC::Loop;
+
+# ABSTRACT: DEPRECATED - A unfinished prototype, do not use
+# VERSION
+
 use strict;
 use warnings;
 use Carp qw(croak);
