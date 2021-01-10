@@ -4,7 +4,7 @@ ZMQx::Class - DEPRECATED - OO Interface to ZMQ
 
 # VERSION
 
-version 0.007
+version 0.008
 
 # SYNOPSIS
 
